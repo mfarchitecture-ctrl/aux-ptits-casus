@@ -33,7 +33,7 @@ local ETAPES = {
     texte = "Les métiers et les niveaux des membres qui ont l'addon. La liste des recettes n'est pas encore "
       .. "active." },
   { page = "commandes", cible = Menu("commandes"), titre = "Commandes",
-    texte = "En haut, tes commandes privées, reçues et envoyées : l'artisan les accepte, les refuse ou les "
+    texte = "En haut, tes commandes personnelles, reçues et envoyées : l'artisan les accepte, les refuse ou les "
       .. "marque « Faite ». En dessous, les commandes de guilde, visibles par tous : n'importe quel artisan "
       .. "peut s'en charger." },
   { page = "loot", cible = Menu("loot"), titre = "Loot en cours",

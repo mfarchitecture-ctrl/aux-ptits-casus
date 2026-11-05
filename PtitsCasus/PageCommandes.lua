@@ -1,5 +1,5 @@
 -- Page Commandes, qui défile à la molette :
--- - en haut, les commandes privées (visibles seulement par toi et l'autre joueur) :
+-- - en haut, les commandes personnelles (visibles seulement par toi et l'autre joueur) :
 --   reçues à gauche (tu es l'artisan), envoyées à droite ;
 -- - en dessous, les commandes de guilde, visibles par tous : n'importe quel artisan peut s'en charger.
 -- Et la petite fenêtre « Commander », ouverte depuis l'artisanat d'un joueur (page Métiers)
@@ -29,9 +29,9 @@ local ETATS = {
 
 local titre = UI.Texte(contenu, UI.TITRE, 22, "ffd100")
 titre:SetPoint("TOPLEFT")
-titre:SetText("Commandes")
+titre:SetText("Commandes personnelles")
 local sous = UI.Paragraphe(contenu, 13, "a89f8a", L,
-  "Tes commandes privées, visibles seulement par toi et l'autre joueur. Pour en passer une : page Métiers, "
+  "Visibles seulement par toi et l'autre joueur. Pour en passer une : page Métiers, "
     .. "recettes d'un artisan, clic sur une recette.")
 sous:SetPoint("TOPLEFT", 0, -titre:GetStringHeight() - 6)
 local HAUT = -titre:GetStringHeight() - 6 - sous:GetStringHeight() - 18
@@ -50,9 +50,13 @@ for i, libelle in ipairs({ "Aucune commande reçue.", "Aucune commande envoyée.
 end
 
 -- Section des commandes de guilde : titre, explication et bouton (placés à chaque affichage).
-local titreGuilde = UI.Texte(contenu, UI.TITRE, 18, "ffd100")
+-- Trait entre les deux sections.
+local separation = contenu:CreateTexture(nil, "ARTWORK")
+separation:SetSize(L, 2)
+separation:SetColorTexture(Hex("6e5230"))
+local titreGuilde = UI.Texte(contenu, UI.TITRE, 22, "ffd100")
 titreGuilde:SetText("Commandes de guilde")
-local sousGuilde = UI.Texte(contenu, UI.TEXTE, 12, "a89f8a")
+local sousGuilde = UI.Texte(contenu, UI.TEXTE, 13, "a89f8a")
 sousGuilde:SetText("Visibles par toute la guilde. N'importe quel artisan peut s'en charger.")
 local nouvelle = UI.BoutonRouge(contenu, "Nouvelle commande de guilde")
 nouvelle:SetHeight(30)
@@ -172,7 +176,7 @@ local function Rafraichir()
   end
   local PAS = HAUTEUR_CARTE + 10
 
-  -- Commandes privées, sur deux colonnes.
+  -- Commandes personnelles, sur deux colonnes.
   local y = HAUT - 30
   local bas = y
   for i, info in ipairs({ { d.recues, true }, { d.envoyees, false } }) do
@@ -190,7 +194,8 @@ local function Rafraichir()
   end
 
   -- Commandes de guilde, sur deux colonnes aussi.
-  y = bas - 26
+  separation:SetPoint("TOPLEFT", 0, bas - 14)
+  y = bas - 36
   titreGuilde:SetPoint("TOPLEFT", 0, y)
   nouvelle:SetPoint("TOPRIGHT", contenu, "TOPLEFT", L, y + 4)
   sousGuilde:SetPoint("TOPLEFT", 0, y - titreGuilde:GetStringHeight() - 4)
