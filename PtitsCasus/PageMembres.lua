@@ -122,6 +122,7 @@ synchro:SetPoint("BOTTOMRIGHT", -14, 12)
 -- Bouton des officiers et du maître de guilde, en bas à gauche de la fiche : désigner ce membre maître du butin.
 local boutonButin = UI.BoutonSombre(fiche, "Désigner maître du butin")
 boutonButin:SetHeight(28)
+boutonButin.texte:SetFont(UI.TEXTE, 11 * UI.ZOOM, "") -- plus petit : le bouton ne touche pas les armes
 boutonButin:SetPoint("BOTTOMLEFT", 14, 8)
 synchro:SetJustifyH("RIGHT")
 
