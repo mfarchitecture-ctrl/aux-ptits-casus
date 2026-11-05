@@ -839,7 +839,6 @@ local function PlacerOngletGuilde()
     end
   end
   ongletGuilde:SetParent(dernier)
-  ongletGuilde:SetSize(dernier:GetSize())
   ongletGuilde:ClearAllPoints()
   ongletGuilde:SetPoint("TOP", dernier, "BOTTOM", 0, f.RosterTab:GetTop() - f.ChatTab:GetBottom())
 end
@@ -849,19 +848,20 @@ local function AjouterOngletGuilde()
   if ongletGuilde or not (f and f.GuildInfoTab) then
     return
   end
-  ongletGuilde = CreateFrame("Button", nil, f.GuildInfoTab, "BackdropTemplate")
-  UI.Habiller(ongletGuilde, "13110d", "8c6a3c")
-  local image = ongletGuilde:CreateTexture(nil, "ARTWORK")
-  image:SetPoint("TOPLEFT", 2, -2)
-  image:SetPoint("BOTTOMRIGHT", -2, 2)
-  image:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
-  ongletGuilde:SetScript("OnClick", Basculer)
-  ongletGuilde:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Aux Ptits Casus")
-    GameTooltip:Show()
+  -- Modèle d'onglet des fenêtres du jeu : il gère l'enfoncement, le son et l'infobulle.
+  ongletGuilde = CreateFrame("Frame", nil, f.GuildInfoTab, "LargeSideTabButtonTemplate")
+  ongletGuilde.Icon:SetTexture("Interface/Icons/INV_Misc_Book_09")
+  ongletGuilde:SetFillToInterior(true)
+  ongletGuilde.tooltipText = "Aux Ptits Casus"
+  ongletGuilde:EnableMouse(true)
+  ongletGuilde:SetChecked(panneau:IsShown())
+  ongletGuilde:SetCustomOnMouseUpHandler(function(_, clic, dessus)
+    if clic == "LeftButton" and dessus then
+      Basculer()
+    end
   end)
-  ongletGuilde:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  panneau:HookScript("OnShow", function() ongletGuilde:SetChecked(true) end)
+  panneau:HookScript("OnHide", function() ongletGuilde:SetChecked(false) end)
   -- Les onglets du jeu ne sont placés qu'une fois la fenêtre ouverte.
   f:HookScript("OnShow", function() C_Timer.After(0, PlacerOngletGuilde) end)
   if f:IsShown() then
@@ -888,8 +888,8 @@ function ns.InitInterface()
   UI.MajCommandes()
 end
 
--- /pc : ouvrir ou fermer.
--- En développement seulement : /pc demo (visite guidée, Visite.lua), /pc test (données de démo),
+-- /pc : ouvrir ou fermer. /pc visite : visite guidée de l'addon (Visite.lua).
+-- En développement seulement : /pc test (données de démo),
 -- /pc maitre, officier, butin, raideur, recrue (simuler ce grade, même commande : arrêter).
 -- /pc loot : rouvrir la fenêtre de loot (vue officier pour le maître du butin, vue joueur sinon).
 -- /pc skin : activer ou couper le skin EllesmereUI (recharge l'interface).
@@ -911,7 +911,7 @@ SlashCmdList.PTITSCASUS = function(argument)
     print("Aux Ptits Casus : " .. (ns.simulation and ("grade simulé : " .. SIMULATIONS[argument].rang) or "retour au vrai grade") .. ".")
     panneau:Show()
     RafraichirTout()
-  elseif ns.admin and argument == "demo" then
+  elseif argument == "visite" then
     UI.LancerVisite()
   elseif ns.admin and argument == "test" then
     ns.demo = not ns.demo

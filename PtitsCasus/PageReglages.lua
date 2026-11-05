@@ -298,6 +298,7 @@ synchro:SetHeight(-synchro.y + 10)
 local commandesJoueurs = Carte("Commandes", "Tous")
 local listeJoueurs = UI.Paragraphe(commandesJoueurs, 13, "c9bfa8", DEMI - 28, table.concat({
   "/pc ou /ig : ouvrir ou fermer la fenêtre",
+  "/pc visite : visite guidée de l'addon",
   "/metiers : métiers reçus, dans le chat",
   "/pc loot : rouvrir la fenêtre de loot",
   "/pc skin : skin EllesmereUI (recharge l'interface)",
@@ -309,7 +310,6 @@ commandesJoueurs:SetHeight(-commandesJoueurs.y + listeJoueurs:GetStringHeight() 
 local commandes = Carte("Commandes de test", "Admin")
 local listeCommandes = UI.Paragraphe(commandes, 13, "c9bfa8", DEMI - 28, table.concat({
   "/pc test : données de démo",
-  "/pc demo : visite guidée",
   "/pc maitre, officier, butin, raideur, recrue : simuler un grade (même commande : arrêter)",
 }, "\n"))
 listeCommandes:SetPoint("TOPLEFT", 14, commandes.y)

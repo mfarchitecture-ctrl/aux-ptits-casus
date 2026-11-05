@@ -17,4 +17,5 @@ FenetresLoot.lua
 PageHistorique.lua
 PageRegles.lua
 PageReglages.lua
+Visite.lua
 Skin.lua
