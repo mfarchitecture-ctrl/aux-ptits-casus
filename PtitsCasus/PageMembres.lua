@@ -78,8 +78,6 @@ local function NouvelleLigneMembre()
   ligne.nom:SetPoint("TOPLEFT", 24, -5)
   ligne.info = UI.Texte(ligne, UI.TEXTE, 11, "a89f8a")
   ligne.info:SetPoint("TOPLEFT", ligne.nom, "BOTTOMLEFT", 0, -2)
-  ligne.horsLigne = UI.Texte(ligne, UI.TEXTE, 11, "8a826f")
-  ligne.horsLigne:SetText("Offline")
   -- Case « +0 » (officiers seulement) et petit autocollant +0 (visible par tous).
   ligne.zero = UI.Case(ligne)
   ligne.zero:SetPoint("RIGHT", -2, 0)
@@ -363,15 +361,13 @@ function Rafraichir()
     ligne.autocollant:SetShown(zero)
     ligne.autocollant:ClearAllPoints()
     ligne.autocollant:SetPoint("RIGHT", droite, 0)
-    if zero then
-      droite = droite - 32
-    end
-    ligne.horsLigne:SetShown(not m.enLigne)
-    ligne.horsLigne:ClearAllPoints()
-    ligne.horsLigne:SetPoint("RIGHT", droite - 2, 0)
-    -- Nom en couleur de classe, suivi du niveau en gris.
+    -- Nom en couleur de classe (en gris si déconnecté), suivi du niveau en gris.
     ligne.nom:SetText(nom .. (m.niveau and (" |cffa89f8a" .. m.niveau .. "|r") or ""))
-    ligne.nom:SetTextColor(ns.Api.CouleurClasse(m.classe))
+    if m.enLigne then
+      ligne.nom:SetTextColor(ns.Api.CouleurClasse(m.classe))
+    else
+      ligne.nom:SetTextColor(Hex("8a826f"))
+    end
     -- Classe, grade, et « Butin » en doré pour le maître du butin désigné.
     ligne.info:SetText(ns.Api.NomClasse(m.classe) .. " · " .. (m.rang or "?")
       .. (nom == UI.MaitreButin() and " · |cffffd100Butin|r" or ""))
