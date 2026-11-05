@@ -37,7 +37,7 @@ UI.PALIERS = {
   ["PU"] = { "c4862b", "c4862b", "ffffff" }, -- ocre
 }
 
--- Skin EllesmereUI (/pc skin) : chaque élément est noté à sa création, puis repeint
+-- Skin EllesmereUI : chaque élément est noté à sa création, puis repeint
 -- par EllesmereUI à la connexion (voir Skin.lua). Une fois le skin en place, UI.skin existe
 -- et les éléments créés ensuite sont repeints tout de suite.
 -- Sortes : "fenetre", "carte", "bouton", "saisie", "case", "texte".
@@ -471,7 +471,7 @@ local function EnvoyerSiOfficier()
   end
 end
 
--- À la connexion et avec « Forcer la synchro ».
+-- À la connexion et avec « Forcer ma synchronisation ».
 function UI.SynchroDroits()
   ns.Api.EnvoyerGuilde("D")
   EnvoyerSiOfficier()
@@ -524,6 +524,14 @@ else
   ButtonFrameTemplate_HidePortrait(panneau)
 end
 UI.panneau = panneau
+
+-- Applique le réglage de taille à toutes les fenêtres de l'addon.
+UI.fenetres = { panneau }
+function UI.AppliquerTaille()
+  for _, f in ipairs(UI.fenetres) do
+    f:SetScale(UI.Reglage("taille", 100) / 100 * UI.ECHELLE)
+  end
+end
 
 -- Bandeau sous la barre de titre : sous-titre et fiche du joueur.
 local bandeau = CreateFrame("Frame", nil, panneau)
@@ -882,28 +890,20 @@ end)
 function ns.InitInterface()
   Placer(PtitsCasusDB.angleMinimap or 225)
   bouton:SetShown(UI.Reglage("minimap", true))
-  panneau:SetScale(UI.Reglage("taille", 100) / 100 * UI.ECHELLE)
+  UI.AppliquerTaille()
   AjouterOngletGuilde() -- au cas où un autre addon aurait déjà chargé la fenêtre de guilde
   UI.AfficherPage(pageActive)
   UI.MajCommandes()
 end
 
 -- /pc : ouvrir ou fermer. /pc visite : visite guidée de l'addon (Visite.lua).
--- En développement seulement : /pc test (données de démo),
+-- En développement seulement : /pc test (données de démo), /pc reduit (fenêtre de loot réduite, en démo),
 -- /pc maitre, officier, butin, raideur, recrue (simuler ce grade, même commande : arrêter).
 -- /pc loot : rouvrir la fenêtre de loot (vue officier pour le maître du butin, vue joueur sinon).
--- /pc skin : activer ou couper le skin EllesmereUI (recharge l'interface).
 SLASH_PTITSCASUS1 = "/pc"
 SLASH_PTITSCASUS2 = "/ig"
 SlashCmdList.PTITSCASUS = function(argument)
-  if argument == "skin" then
-    if not (EllesmereUI and EllesmereUI.RegisterSkin) then
-      print("Aux Ptits Casus : EllesmereUI n'est pas chargé, pas de skin possible.")
-      return
-    end
-    UI.Regler("skin", not UI.Reglage("skin", false))
-    ReloadUI() -- un skin EllesmereUI ne s'enlève pas sans recharger
-  elseif argument == "loot" then
+  if argument == "loot" then
     UI.BasculerLoot()
   elseif ns.admin and SIMULATIONS[argument] then
     -- Même commande une deuxième fois : retour au vrai grade.
@@ -913,6 +913,10 @@ SlashCmdList.PTITSCASUS = function(argument)
     RafraichirTout()
   elseif argument == "visite" then
     UI.LancerVisite()
+  elseif ns.admin and argument == "reduit" then
+    ns.demo = true
+    UI.membreChoisi = nil
+    UI.OuvrirLootReduit()
   elseif ns.admin and argument == "test" then
     ns.demo = not ns.demo
     print("Aux Ptits Casus : démo " .. (ns.demo and "activée" or "coupée") .. ".")

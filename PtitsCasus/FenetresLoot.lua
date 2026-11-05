@@ -7,8 +7,8 @@ local _, ns = ...
 local UI = ns.UI
 local Hex = UI.Hex
 
-local LARGEUR = 360
-local INTERIEUR = LARGEUR - 18 -- largeur d'une ligne d'objet
+local LARGEUR = 368
+local INTERIEUR = LARGEUR - 26 -- largeur d'une ligne d'objet
 
 -- Petite fenêtre déplaçable : bandeau avec titre, texte à droite et bouton de fermeture, texte en pied.
 local function PetiteFenetre(nom)
@@ -25,6 +25,7 @@ local function PetiteFenetre(nom)
   f:SetScript("OnDragStop", f.StopMovingOrSizing)
   f:Hide()
   table.insert(UISpecialFrames, nom)
+  table.insert(UI.fenetres, f)
   -- Cadre standard du jeu, sans portrait.
   ButtonFrameTemplate_HidePortrait(f)
   ButtonFrameTemplate_HideButtonBar(f)
@@ -38,7 +39,7 @@ local function PetiteFenetre(nom)
   f.droite = UI.Texte(f.bandeau, UI.TEXTE, 12, "a89f8a")
   f.droite:SetPoint("RIGHT", f.fermer, "LEFT", -10, 0)
 
-  f.pied = UI.Paragraphe(f, 11, "a89f8a", LARGEUR - 24, "")
+  f.pied = UI.Paragraphe(f, 11, "a89f8a", LARGEUR - 30, "")
   f.lignes = {}
   UI.Noter("fenetre", f)
   return f
@@ -107,11 +108,11 @@ local function Disposer(f, ouverte)
     local h = ligne.hauteur + (estOuverte and ligne.detail:GetHeight() or 0)
     ligne.detail:SetShown(estOuverte)
     ligne:SetHeight(h)
-    ligne:SetPoint("TOPLEFT", 9, y)
+    ligne:SetPoint("TOPLEFT", 13, y)
     UI.Habiller(ligne, estOuverte and "1e1a13" or "1b1711", estOuverte and UI.ACCENT or "4a3820")
     y = y - h - 4
   end
-  f.pied:SetPoint("TOPLEFT", 12, y - 4)
+  f.pied:SetPoint("TOPLEFT", 15, y - 4)
   f:SetHeight(-y + 4 + f.pied:GetStringHeight() + 14)
 end
 
@@ -404,8 +405,8 @@ end
 
 for _, f in ipairs({ joueur, mini }) do
   f.onglets = CreateFrame("Frame", nil, f)
-  f.onglets:SetPoint("TOPLEFT", 9, -47)
-  f.onglets:SetPoint("TOPRIGHT", -9, -47)
+  f.onglets:SetPoint("TOPLEFT", 13, -47)
+  f.onglets:SetPoint("TOPRIGHT", -13, -47)
   f.onglets:SetHeight(30)
   f.onglets:Hide()
   local largeur = (INTERIEUR - 6) / 2
@@ -448,4 +449,10 @@ function UI.BasculerLoot()
   else
     joueur:Show()
   end
+end
+
+-- Ouvre la vue réduite du maître du butin, quel que soit le grade (test).
+function UI.OuvrirLootReduit()
+  joueur:Hide()
+  mini:Show()
 end

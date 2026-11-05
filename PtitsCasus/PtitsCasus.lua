@@ -35,7 +35,7 @@ local function EnvoyerMetiers()
   Api.EnvoyerGuilde(texte)
 end
 
--- Bouton « Forcer la synchro » des Réglages : renvoie même si rien n'a changé.
+-- Bouton « Forcer ma synchronisation » des Réglages : renvoie même si rien n'a changé.
 function ns.ForcerSynchro()
   dernierEnvoi = nil
   EnvoyerMetiers()

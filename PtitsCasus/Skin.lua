@@ -1,5 +1,5 @@
--- Skin EllesmereUI (optionnel) : si EllesmereUI est installé et que le skin est activé
--- (/pc skin), EllesmereUI repeint le panneau et les fenêtres de loot dans son thème.
+-- Skin EllesmereUI : si EllesmereUI est activé, il repeint le panneau et les fenêtres de loot
+-- dans son thème.
 -- Tout passe par l'API qu'EllesmereUI prévoit pour les autres addons (SKINNING_API.md
 -- dans son dossier). Sans EllesmereUI, ce fichier ne fait rien.
 local _, ns = ...
@@ -31,9 +31,6 @@ end
 
 if EllesmereUI and EllesmereUI.RegisterSkin then
   EllesmereUI.RegisterSkin("PtitsCasus", function(S)
-    if not (PtitsCasusDB and PtitsCasusDB.reglages and PtitsCasusDB.reglages.skin) then
-      return -- skin pas activé avec /pc skin
-    end
     UI.skin = S
     for _, note in ipairs(UI.aSkinner) do
       UI.Peindre(note[1], note[2])

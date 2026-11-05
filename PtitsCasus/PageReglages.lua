@@ -1,7 +1,7 @@
 -- Page Réglages : « Mon affichage » (personnel) et les réglages d'officier
 -- (maître du butin, loot, synchronisation). Les choix sont enregistrés dans la sauvegarde.
 -- Pour l'instant, seuls la taille de la fenêtre, le bouton de la minimap et
--- « Forcer la synchro » ont un effet ; les autres choix seront utilisés plus tard.
+-- « Forcer ma synchronisation » ont un effet ; les autres choix seront utilisés plus tard.
 local _, ns = ...
 local UI = ns.UI
 local Hex = UI.Hex
@@ -36,7 +36,7 @@ local function Carte(titreCarte, puce)
 end
 
 -- Largeur réservée à droite pour chaque type de contrôle.
-local CONTROLE = { case = 30, choix = 170, taille = 140, bouton = 210 }
+local CONTROLE = { case = 30, choix = 170, taille = 140, bouton = 270 }
 
 -- Ligne de réglage : libellé et indication à gauche, coupés à la ligne pour ne pas
 -- passer sous le contrôle ; le contrôle (de largeur « largeurControle ») se place à droite.
@@ -116,7 +116,7 @@ moins:SetPoint("RIGHT", plus, "LEFT", -60, 0)
 local function Taille(ecart)
   local taille = math.min(130, math.max(70, UI.Reglage("taille", 100) + ecart))
   UI.Regler("taille", taille)
-  UI.panneau:SetScale(taille / 100 * UI.ECHELLE)
+  UI.AppliquerTaille()
   valeurTaille:SetText(taille .. " %")
 end
 plus:SetScript("OnClick", function() Taille(10) end)
@@ -214,6 +214,7 @@ choix:SetSize(260, 360)
 choix:SetFrameStrata("DIALOG")
 choix:EnableMouse(true)
 choix:Hide()
+table.insert(UI.fenetres, choix)
 local titreChoix = UI.Texte(choix, UI.TITRE, 14, "ffd100")
 titreChoix:SetPoint("TOPLEFT", 12, -12)
 titreChoix:SetText("Choisir le maître du butin")
@@ -286,11 +287,11 @@ synchro:SetPoint("TOPLEFT", droits, "BOTTOMLEFT", 0, -14)
 local ligneSynchro = Ligne(synchro, CONTROLE.bouton, "Synchronisation", " ")
 local indicationSynchro = UI.Texte(ligneSynchro, UI.TEXTE, 12, "a89f8a")
 indicationSynchro:SetPoint("BOTTOMLEFT", 0, 10)
-local forcer = UI.BoutonRouge(ligneSynchro, "Forcer la synchro")
+local forcer = UI.BoutonRouge(ligneSynchro, "Forcer ma synchronisation")
 forcer:SetPoint("RIGHT")
 forcer:SetScript("OnClick", function()
   ns.ForcerSynchro()
-  print("Aux Ptits Casus : métiers et maître du butin renvoyés à la guilde.")
+  print("Aux Ptits Casus : tes métiers ont été renvoyés à la guilde.")
 end)
 synchro:SetHeight(-synchro.y + 10)
 
@@ -301,7 +302,6 @@ local listeJoueurs = UI.Paragraphe(commandesJoueurs, 13, "c9bfa8", DEMI - 28, ta
   "/pc visite : visite guidée de l'addon",
   "/metiers : métiers reçus, dans le chat",
   "/pc loot : rouvrir la fenêtre de loot",
-  "/pc skin : skin EllesmereUI (recharge l'interface)",
 }, "\n"))
 listeJoueurs:SetPoint("TOPLEFT", 14, commandesJoueurs.y)
 commandesJoueurs:SetHeight(-commandesJoueurs.y + listeJoueurs:GetStringHeight() + 14)
@@ -310,6 +310,7 @@ commandesJoueurs:SetHeight(-commandesJoueurs.y + listeJoueurs:GetStringHeight() 
 local commandes = Carte("Commandes de test", "Admin")
 local listeCommandes = UI.Paragraphe(commandes, 13, "c9bfa8", DEMI - 28, table.concat({
   "/pc test : données de démo",
+  "/pc reduit : données de démo et fenêtre de loot réduite",
   "/pc maitre, officier, butin, raideur, recrue : simuler un grade (même commande : arrêter)",
 }, "\n"))
 listeCommandes:SetPoint("TOPLEFT", 14, commandes.y)
