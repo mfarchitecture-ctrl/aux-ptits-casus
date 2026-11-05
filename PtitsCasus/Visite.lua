@@ -23,7 +23,7 @@ local ETAPES = {
   { page = "stats", cible = Menu("stats"), titre = "Statistiques",
     texte = "Les chiffres de la guilde : classes, grades et métiers. Survole un graphique pour son détail." },
   { page = "membres", cible = Menu("membres"), titre = "Membres",
-    texte = "La liste des membres, triable par nom, grade, classe ou statut. Clic sur un membre : sa fiche, "
+    texte = "La liste des membres, triable par nom, niveau, grade, classe ou statut. Clic sur un membre : sa fiche, "
       .. "avec ses métiers. Ta fiche montre aussi ton équipement." },
   { page = "membres", cible = Menu("membres"), titre = "Le +0, côté officiers",
     si = function() return UI.Droits().officier end,

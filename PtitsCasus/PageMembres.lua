@@ -25,11 +25,12 @@ local indice = UI.Texte(recherche, UI.TEXTE, 14, "8a826f")
 indice:SetPoint("LEFT", 12, 0)
 indice:SetText("Chercher…")
 
--- Tri de la liste, en haut : par nom, grade, classe ou statut (petits boutons).
+-- Tri de la liste, en haut : par nom, niveau, grade, classe ou statut (petits boutons).
 local Rafraichir
 local boutonsTri = {}
-local LARGEUR_TRI = (LARGEUR_LISTE - 3 * 4) / 4
-for i, tri in ipairs({ { "nom", "Nom" }, { "grade", "Grade" }, { "classe", "Classe" }, { "statut", "Statut" } }) do
+local LARGEUR_TRI = (LARGEUR_LISTE - 4 * 4) / 5
+local TRIS = { { "nom", "Nom" }, { "niveau", "Niveau" }, { "grade", "Grade" }, { "classe", "Classe" }, { "statut", "Statut" } }
+for i, tri in ipairs(TRIS) do
   local bouton = UI.BoutonSombre(page, tri[2])
   bouton.texte:SetFont(UI.TEXTE, 11 * UI.ZOOM, "")
   bouton:SetSize(LARGEUR_TRI, 24)
@@ -317,10 +318,13 @@ function Rafraichir()
     end
   end
   -- Par grade : du plus haut au plus bas. Par classe : ordre alphabétique des classes.
-  -- Par statut : les connectés d'abord.
+  -- Par statut : les connectés d'abord. Par niveau : du plus haut au plus bas.
   -- Puis par nom dans un même grade ou une même classe.
   table.sort(noms, function(a, b)
     local ma, mb = membres[a], membres[b]
+    if tri == "niveau" and ma.niveau ~= mb.niveau then
+      return (ma.niveau or 0) > (mb.niveau or 0)
+    end
     if tri == "statut" and not ma.enLigne ~= not mb.enLigne then
       return ma.enLigne
     end
