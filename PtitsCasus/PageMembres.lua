@@ -346,7 +346,7 @@ function Rafraichir()
     local ligne, m = lignes[i], membres[nom]
     ligne:SetPoint("TOPLEFT", 0, -(i - 1) * 46)
     ligne.pastille:SetShown(m.enLigne == true)
-    -- À droite de la ligne : [Offline] [autocollant +0] [case +0 des officiers].
+    -- À droite de la ligne : [autocollant +0] [case +0 des officiers].
     local zero = UI.AZero(nom)
     ligne.zero:SetShown(officier)
     ligne.zero:SetChecked(zero)
