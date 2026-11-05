@@ -1,0 +1,6 @@
+<!-- Raccourci clavier de l'addon : se choisit dans les Réglages de l'addon, ou dans Options > Raccourcis > AddOns. Aucune touche par défaut. -->
+<Bindings>
+  <Binding name="PTITSCASUS_OUVRIR" header="PTITSCASUS" category="ADDONS">
+    PtitsCasus_Basculer()
+  </Binding>
+</Bindings>

@@ -1,0 +1,20 @@
+## Interface: 16001
+## Title: Aux Ptits Casus
+## Notes: Addon de la guilde Aux Ptits Casus
+## SavedVariables: PtitsCasusDB
+## OptionalDeps: EllesmereUI
+
+Api.lua
+PtitsCasus.lua
+Commandes.lua
+Interface.lua
+PageMembres.lua
+PageMetiers.lua
+PageCommandes.lua
+PageStats.lua
+PageLoot.lua
+FenetresLoot.lua
+PageHistorique.lua
+PageRegles.lua
+PageReglages.lua
+Skin.lua
