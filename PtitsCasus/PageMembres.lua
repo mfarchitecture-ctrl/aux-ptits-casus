@@ -25,18 +25,18 @@ local indice = UI.Texte(recherche, UI.TEXTE, 14, "8a826f")
 indice:SetPoint("LEFT", 12, 0)
 indice:SetText("Chercher…")
 
--- Tri de la liste, en haut : par nom, niveau, grade, classe ou statut (petits boutons).
+-- Tri de la liste, en haut : par niveau, classe, nom ou statut (petits boutons).
 local Rafraichir
 local boutonsTri = {}
-local LARGEUR_TRI = (LARGEUR_LISTE - 4 * 4) / 5
-local TRIS = { { "nom", "Nom" }, { "niveau", "Niveau" }, { "grade", "Grade" }, { "classe", "Classe" }, { "statut", "Statut" } }
+local LARGEUR_TRI = (LARGEUR_LISTE - 3 * 4) / 4
+local TRIS = { { "niveau", "Niveau" }, { "classe", "Classe" }, { "nom", "Nom" }, { "statut", "Statut" } }
 for i, tri in ipairs(TRIS) do
   local bouton = UI.BoutonSombre(page, tri[2])
   bouton.texte:SetFont(UI.TEXTE, 11 * UI.ZOOM, "")
   bouton:SetSize(LARGEUR_TRI, 24)
   bouton:SetPoint("TOPLEFT", (i - 1) * (LARGEUR_TRI + 4), 0)
   bouton:SetScript("OnClick", function()
-    UI.Regler("triMembres", tri[1])
+    UI.Regler("triListe", tri[1])
     if tri[1] == "statut" then
       UI.Regler("voirHorsLigne", true) -- sinon la liste ne montre que les connectés
     end
@@ -305,7 +305,7 @@ function Rafraichir()
   indice:SetShown(filtre == "")
   local voirHorsLigne = UI.Reglage("voirHorsLigne", false)
   caseHorsLigne:SetChecked(voirHorsLigne)
-  local tri = UI.Reglage("triMembres", "nom")
+  local tri = UI.Reglage("triListe", "nom")
   for cle, bouton in pairs(boutonsTri) do
     UI.Habiller(bouton, "241f17", cle == tri and UI.ACCENT or "6e5230")
     bouton.texte:SetTextColor(Hex(cle == tri and UI.ACCENT or "e8e0cc"))
@@ -317,9 +317,9 @@ function Rafraichir()
       table.insert(noms, nom)
     end
   end
-  -- Par grade : du plus haut au plus bas. Par classe : ordre alphabétique des classes.
+  -- Par classe : ordre alphabétique des classes.
   -- Par statut : les connectés d'abord. Par niveau : du plus haut au plus bas.
-  -- Puis par nom dans un même grade ou une même classe.
+  -- Puis par nom à égalité.
   table.sort(noms, function(a, b)
     local ma, mb = membres[a], membres[b]
     if tri == "niveau" and ma.niveau ~= mb.niveau then
@@ -327,9 +327,6 @@ function Rafraichir()
     end
     if tri == "statut" and not ma.enLigne ~= not mb.enLigne then
       return ma.enLigne
-    end
-    if tri == "grade" and ma.rangIndex ~= mb.rangIndex then
-      return (ma.rangIndex or 99) < (mb.rangIndex or 99)
     end
     local ca, cb = ns.Api.NomClasse(ma.classe), ns.Api.NomClasse(mb.classe)
     if tri == "classe" and ca ~= cb then
