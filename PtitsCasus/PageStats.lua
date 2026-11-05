@@ -35,6 +35,10 @@ local ICONES_METIERS = {
   ["Pêche"] = "Trade_Fishing", Fishing = "Trade_Fishing",
 }
 
+-- Tous les métiers du jeu, pour montrer ceux que personne n'a.
+local METIERS = { "Alchimie", "Couture", "Cuisine", "Dépeçage", "Enchantement", "Forge", "Herboristerie",
+  "Ingénierie", "Minage", "Pêche", "Secourisme", "Travail du cuir" }
+
 -- Animations : chaque élément animé reçoit une avancée de 0 à 1 (ralentie à la fin).
 local animations = {}
 local animateur = CreateFrame("Frame")
@@ -304,33 +308,6 @@ local function Blocs(x, y, largeur, colonnes)
   return base - 36
 end
 
--- Colonnes qui montent, avec l'icône sous chacune. { { valeur, icône, titre, info }, ... }
-local function Colonnes(x, y, largeur, colonnes)
-  local hauteur = 150
-  local base = y - hauteur
-  Axe(x, y, hauteur, true)
-  Axe(x, base, largeur)
-  local max = 0
-  for _, c in ipairs(colonnes) do
-    max = math.max(max, c[1])
-  end
-  local pas = (largeur - 10) / math.max(#colonnes, 1)
-  local l = math.min(28, pas * 0.6)
-  for i, c in ipairs(colonnes) do
-    local px = x + 10 + (i - 1) * pas + (pas - l) / 2
-    local h = max > 0 and (hauteur - 40) * c[1] / max or 0
-    local col = Rect(i % 2 == 1 and OR or OR_FONCE)
-    col:SetWidth(l)
-    col:SetPoint("BOTTOMLEFT", contenu, "TOPLEFT", px, base)
-    Animer(0.25 + 0.06 * i, function(e) col:SetHeight(math.max(0.01, h * e)) end)
-    local nombre = TexteCentre(11, "e8e0cc", px + l / 2, base + h + 9, c[1])
-    Animer(0.5 + 0.06 * i, function(e) nombre:SetAlpha(e) end)
-    Icone(c[2], 20, px + l / 2, base - 16)
-    Survol(px - 4, base + h + 18, l + 8, h + 48, c[3], c[4])
-  end
-  return base - 36
-end
-
 -- Barres horizontales qui glissent : { { libellé, valeur, couleur, info-bulle }, ... }.
 local function Barres(x, y, largeur, barres)
   local max = 0
@@ -428,36 +405,53 @@ local function Composition(y, membres)
   return math.min(yg, yd)
 end
 
--- Métiers : une colonne par métier (nombre d'artisans), son icône dessous.
+-- Métiers : pour chaque métier, ses artisans du plus haut niveau au plus bas,
+-- puis les métiers que personne n'a encore.
 local function Metiers(x, y, largeur, membres)
-  y = TitreSection(x, y, largeur, "Métiers", "Artisans et meilleur niveau, métier par métier.")
-  local artisans, meilleur, auMax, recettes, nbRecettes = {}, {}, 0, {}, 0
-  for _, m in pairs(membres) do
+  y = TitreSection(x, y, largeur, "Métiers", "Les artisans ayant l'addon, du plus haut niveau au plus bas.")
+  local artisans, noms = {}, {}
+  for nom, m in pairs(membres) do
     for _, metier in ipairs(m.metiers or {}) do
-      artisans[metier.nom] = (artisans[metier.nom] or 0) + 1
-      meilleur[metier.nom] = math.max(meilleur[metier.nom] or 0, metier.niveau)
-      if metier.niveau >= 300 then auMax = auMax + 1 end
-      for _, r in ipairs(metier.recettes or {}) do
-        if not recettes[r] then
-          recettes[r] = true
-          nbRecettes = nbRecettes + 1
-        end
+      if not artisans[metier.nom] then
+        artisans[metier.nom] = {}
+        table.insert(noms, metier.nom)
       end
+      table.insert(artisans[metier.nom], { nom = nom, classe = m.classe, niveau = metier.niveau })
     end
   end
-  local nbMetiers = 0
-  for _ in pairs(artisans) do nbMetiers = nbMetiers + 1 end
-  y = Tuiles(x, y, largeur, {
-    { nbMetiers, "Métiers" },
-    { auMax, "Artisans au 300" },
-    { nbRecettes, "Recettes connues" },
-  })
-  local colonnes = {}
-  for _, a in ipairs(Trier(artisans)) do
-    table.insert(colonnes, { a[2], ICONES_METIERS[a[1]] or "INV_Misc_QuestionMark", a[1],
-      a[2] .. " artisan(s), meilleur niveau " .. meilleur[a[1]] })
+  if #noms == 0 then
+    return Vide(x, y, largeur, "Aucun métier reçu pour l'instant.")
   end
-  return #colonnes > 0 and Colonnes(x, y, largeur, colonnes) or Vide(x, y, largeur, "Aucun métier reçu pour l'instant.")
+  table.sort(noms)
+  for _, metier in ipairs(noms) do
+    local liste = artisans[metier]
+    table.sort(liste, function(a, b)
+      if a.niveau ~= b.niveau then
+        return a.niveau > b.niveau
+      end
+      return a.nom < b.nom
+    end)
+    local parties = {}
+    for _, a in ipairs(liste) do
+      table.insert(parties, "|cff" .. UI.HexClasse(a.classe) .. a.nom .. "|r " .. a.niveau)
+    end
+    Icone(ICONES_METIERS[metier] or "INV_Misc_QuestionMark", 24, x + 12, y - 14)
+    local titre = Texte(UI.TEXTE, 14, "e8e0cc", x + 34, y, metier)
+    local detail = Texte(UI.TEXTE, 13, "a89f8a", x + 34, y - titre:GetStringHeight() - 2,
+      table.concat(parties, " · "), largeur - 34)
+    y = y - titre:GetStringHeight() - 2 - detail:GetStringHeight() - 12
+  end
+  local absents = {}
+  for _, metier in ipairs(METIERS) do
+    if not artisans[metier] then
+      table.insert(absents, metier)
+    end
+  end
+  if #absents > 0 then
+    local fs = Texte(UI.TEXTE, 13, "8a826f", x, y, "Personne : " .. table.concat(absents, ", "), largeur)
+    y = y - fs:GetStringHeight() - 8
+  end
+  return y
 end
 
 -- Raids : soirées et boss tués (nombre de kills par boss, premier kill au survol).
