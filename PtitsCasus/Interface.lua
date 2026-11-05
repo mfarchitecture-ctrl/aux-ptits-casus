@@ -751,31 +751,9 @@ BINDING_HEADER_PTITSCASUS = "Aux Ptits Casus"
 BINDING_NAME_PTITSCASUS_OUVRIR = "Ouvrir ou fermer le panneau"
 PtitsCasus_Basculer = Basculer
 
--- Bouton rond autour de la minimap.
-local bouton = CreateFrame("Button", "PtitsCasusBoutonMinimap", Minimap)
-bouton:SetSize(31, 31)
-bouton:SetFrameStrata("MEDIUM")
-bouton:SetFrameLevel(8)
-bouton:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-bouton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-bouton:RegisterForDrag("LeftButton")
-UI.boutonMinimap = bouton
-
-local icone = bouton:CreateTexture(nil, "BACKGROUND")
-icone:SetSize(20, 20)
-icone:SetPoint("TOPLEFT", 7, -5)
-icone:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
-
-local bord = bouton:CreateTexture(nil, "OVERLAY")
-bord:SetSize(53, 53)
-bord:SetPoint("TOPLEFT")
-bord:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-
--- Pastille rouge sur le bouton : nombre de nouveautés dans les commandes.
-local pastille = CreateFrame("Frame", nil, bouton)
+-- Pastille rouge sur le bouton de la minimap : nombre de nouveautés dans les commandes.
+local pastille = CreateFrame("Frame", nil, UIParent)
 pastille:SetSize(16, 16)
-pastille:SetPoint("TOPRIGHT", 2, 2)
-pastille:SetFrameLevel(bouton:GetFrameLevel() + 5)
 UI.Fond(pastille, "c0261a")
 local chiffre = UI.Texte(pastille, UI.TITRE, 9, "ffffff")
 chiffre:SetPoint("CENTER")
@@ -794,45 +772,53 @@ function UI.MajCommandes()
   end
 end
 
--- Place le bouton sur le bord de la minimap, selon un angle en degrés.
-local function Placer(angle)
-  local rayon = Minimap:GetWidth() / 2 + 10
-  bouton:ClearAllPoints()
-  bouton:SetPoint("CENTER", Minimap, "CENTER", math.cos(math.rad(angle)) * rayon, math.sin(math.rad(angle)) * rayon)
+-- Bouton de la minimap (LibDBIcon). Clic gauche : ouvrir ou fermer. Clic droit : Réglages.
+local NOM_BOUTON = "PtitsCasus"
+
+local function CreerBoutonMinimap()
+  local objet = LibStub("LibDataBroker-1.1"):NewDataObject(NOM_BOUTON, {
+    type = "launcher",
+    icon = "Interface\\Icons\\INV_Misc_Book_09",
+    OnClick = function(_, clic)
+      if clic == "RightButton" then
+        panneau:Show()
+        UI.AfficherPage("reglages")
+      else
+        Basculer()
+      end
+    end,
+    OnTooltipShow = function(bulle)
+      bulle:AddLine("Aux Ptits Casus")
+      bulle:AddLine("Clic : ouvrir le panneau", 1, 1, 1)
+      bulle:AddLine("Clic droit : Réglages", 1, 1, 1)
+      bulle:AddLine("Glisser : déplacer le bouton", 1, 1, 1)
+      local n = ns.Commandes.Donnees().nonLues
+      if n > 0 then
+        bulle:AddLine(n .. " nouveauté(s) dans les commandes", 1, 0.82, 0)
+      end
+    end,
+  })
+  -- Reprend la position de l'ancien bouton (même angle en degrés).
+  PtitsCasusDB.minimap = PtitsCasusDB.minimap or { minimapPos = PtitsCasusDB.angleMinimap }
+  PtitsCasusDB.angleMinimap = nil
+  PtitsCasusDB.minimap.hide = not UI.Reglage("minimap", true)
+  local icones = LibStub("LibDBIcon-1.0")
+  icones:Register(NOM_BOUTON, objet, PtitsCasusDB.minimap)
+  UI.boutonMinimap = icones:GetMinimapButton(NOM_BOUTON)
+  pastille:SetParent(UI.boutonMinimap)
+  pastille:SetPoint("TOPRIGHT", 2, 2)
+  pastille:SetFrameLevel(UI.boutonMinimap:GetFrameLevel() + 5)
 end
 
-local function SuivreSouris()
-  local mx, my = Minimap:GetCenter()
-  local sx, sy = GetCursorPosition()
-  local echelle = Minimap:GetEffectiveScale()
-  PtitsCasusDB.angleMinimap = math.deg(math.atan2(sy / echelle - my, sx / echelle - mx))
-  Placer(PtitsCasusDB.angleMinimap)
-end
-
--- Clic gauche : ouvrir ou fermer. Clic droit : Réglages.
-bouton:SetScript("OnClick", function(_, clic)
-  if clic == "RightButton" then
-    panneau:Show()
-    UI.AfficherPage("reglages")
+function UI.AfficherBoutonMinimap(affiche)
+  PtitsCasusDB.minimap.hide = not affiche
+  local icones = LibStub("LibDBIcon-1.0")
+  if affiche then
+    icones:Show(NOM_BOUTON)
   else
-    Basculer()
+    icones:Hide(NOM_BOUTON)
   end
-end)
-bouton:SetScript("OnDragStart", function(self) self:SetScript("OnUpdate", SuivreSouris) end)
-bouton:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
-bouton:SetScript("OnEnter", function(self)
-  GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-  GameTooltip:SetText("Aux Ptits Casus")
-  GameTooltip:AddLine("Clic : ouvrir le panneau", 1, 1, 1)
-  GameTooltip:AddLine("Clic droit : Réglages", 1, 1, 1)
-  GameTooltip:AddLine("Glisser : déplacer le bouton", 1, 1, 1)
-  local n = ns.Commandes.Donnees().nonLues
-  if n > 0 then
-    GameTooltip:AddLine(n .. " nouveauté(s) dans les commandes", 1, 0.82, 0)
-  end
-  GameTooltip:Show()
-end)
-bouton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
 
 -- Onglet dans la fenêtre Guilde et communautés, sous le dernier de ses onglets de droite.
 -- Accroché à ce dernier : il apparaît et disparaît avec lui. La fenêtre du jeu n'est pas modifiée.
@@ -856,18 +842,33 @@ local function AjouterOngletGuilde()
   if ongletGuilde or not (f and f.GuildInfoTab) then
     return
   end
-  -- Modèle d'onglet des fenêtres du jeu : il gère l'enfoncement, le son et l'infobulle.
-  ongletGuilde = CreateFrame("Frame", nil, f.GuildInfoTab, "LargeSideTabButtonTemplate")
-  ongletGuilde.Icon:SetTexture("Interface/Icons/INV_Misc_Book_09")
-  ongletGuilde:SetFillToInterior(true)
-  ongletGuilde.tooltipText = "Aux Ptits Casus"
-  ongletGuilde:EnableMouse(true)
+  -- Même construction que les onglets du jeu : fond du grimoire, icône, surbrillance et son.
+  ongletGuilde = CreateFrame("CheckButton", nil, f.GuildInfoTab)
+  ongletGuilde:SetSize(32, 32)
+  local fond = ongletGuilde:CreateTexture(nil, "BACKGROUND")
+  fond:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
+  fond:SetSize(64, 64)
+  fond:SetPoint("TOPLEFT", -3, 11)
+  local icone = ongletGuilde:CreateTexture(nil, "ARTWORK")
+  icone:SetAllPoints()
+  icone:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+  ongletGuilde:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+  ongletGuilde:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
+  ongletGuilde:GetCheckedTexture():SetBlendMode("ADD")
   ongletGuilde:SetChecked(panneau:IsShown())
-  ongletGuilde:SetCustomOnMouseUpHandler(function(_, clic, dessus)
-    if clic == "LeftButton" and dessus then
-      Basculer()
-    end
+  ongletGuilde:SetScript("OnMouseDown", function() icone:SetVertexColor(0.6, 0.6, 0.6) end)
+  ongletGuilde:SetScript("OnMouseUp", function() icone:SetVertexColor(1, 1, 1) end)
+  ongletGuilde:SetScript("OnClick", function(self)
+    PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
+    Basculer()
+    self:SetChecked(panneau:IsShown())
   end)
+  ongletGuilde:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Aux Ptits Casus")
+    GameTooltip:Show()
+  end)
+  ongletGuilde:SetScript("OnLeave", function() GameTooltip:Hide() end)
   panneau:HookScript("OnShow", function() ongletGuilde:SetChecked(true) end)
   panneau:HookScript("OnHide", function() ongletGuilde:SetChecked(false) end)
   -- Les onglets du jeu ne sont placés qu'une fois la fenêtre ouverte.
@@ -888,8 +889,7 @@ end)
 
 -- Appelé à la connexion, une fois PtitsCasusDB chargé.
 function ns.InitInterface()
-  Placer(PtitsCasusDB.angleMinimap or 225)
-  bouton:SetShown(UI.Reglage("minimap", true))
+  CreerBoutonMinimap()
   UI.AppliquerTaille()
   AjouterOngletGuilde() -- au cas où un autre addon aurait déjà chargé la fenêtre de guilde
   UI.AfficherPage(pageActive)

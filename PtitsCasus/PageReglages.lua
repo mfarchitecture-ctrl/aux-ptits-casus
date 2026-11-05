@@ -154,7 +154,7 @@ raccourci:SetScript("OnHide", AfficherRaccourci)
 table.insert(aRafraichir, AfficherRaccourci)
 
 CaseReglage(Ligne(affichage, CONTROLE.case, "Bouton autour de la minimap", "Clic droit dessus : Réglages"), "minimap", true,
-  function(affiche) UI.boutonMinimap:SetShown(affiche) end)
+  UI.AfficherBoutonMinimap)
 CaseReglage(Ligne(affichage, CONTROLE.case, "Son à l'ouverture des annonces"), "son", false)
 if ns.admin then
   CaseReglage(Ligne(affichage, CONTROLE.case, "Admin", "Mêmes droits que le maître de guilde"), "admin", false,
