@@ -151,6 +151,32 @@ function C.DemanderGuilde()
   Api.EnvoyerGuilde("Q")
 end
 
+-- États acceptés à la réception : un autre état veut dire que le message est abîmé.
+local ETATS_GUILDE = { Ouverte = true, Prise = true, Faite = true, ["Annulée"] = true }
+local ETATS_REPONSE = { ["Reçue"] = true, ["Acceptée"] = true, ["Refusée"] = true, Faite = true, ["Annulée"] = true }
+
+local function Rempli(texte)
+  return texte ~= nil and texte ~= ""
+end
+
+local function GuildeValide(c)
+  return Rempli(c.id) and Rempli(c.de) and Rempli(c.recette) and ETATS_GUILDE[c.etat]
+    and (c.etat ~= "Prise" or c.par) and c.quand > 0 and c.maj > 0
+end
+
+-- Une commande de guilde ne change que par son demandeur ou son preneur.
+-- N'importe quel membre peut seulement prendre une commande encore ouverte.
+local function PeutChanger(c, ancienne, de)
+  if not ancienne then
+    return de == c.de or de == c.par -- le preneur renvoie aussi la commande à ceux qui se connectent
+  end
+  if c.de ~= ancienne.de then
+    return false
+  end
+  return de == ancienne.de or de == ancienne.par
+    or (ancienne.etat == "Ouverte" and c.etat == "Prise" and c.par == de)
+end
+
 -- Message reçu d'un autre addon (voir PtitsCasus.lua).
 function C.Recevoir(texte, expediteur)
   local de = Api.NomCourt(expediteur)
@@ -160,8 +186,11 @@ function C.Recevoir(texte, expediteur)
     local g = Guilde(v)
     local c = { id = m[2], de = m[3], recette = m[4], quantite = tonumber(m[5]) or 1, note = m[6] or "",
       etat = m[7], par = m[8] ~= "" and m[8] or nil, quand = tonumber(m[9]) or 0, maj = tonumber(m[10]) or 0 }
+    if not GuildeValide(c) then
+      return
+    end
     local ancienne = g[c.id]
-    if not ancienne or c.maj > ancienne.maj then
+    if PeutChanger(c, ancienne, de) and (not ancienne or c.maj > ancienne.maj) then
       g[c.id] = c
       if not ancienne and c.de ~= MonNom() and c.etat == "Ouverte" then
         v.nonLues = v.nonLues + 1
@@ -183,6 +212,9 @@ function C.Recevoir(texte, expediteur)
       end)
     end
   elseif m[1] == "C" then
+    if not (Rempli(m[2]) and Rempli(m[3]) and Api.LireGuilde()[de]) then
+      return -- message abîmé, ou joueur hors de la guilde
+    end
     for _, c in ipairs(v.recues) do
       if c.id == m[2] then
         return -- déjà reçue
@@ -194,9 +226,12 @@ function C.Recevoir(texte, expediteur)
     print("Aux Ptits Casus : nouvelle commande de " .. de .. " : " .. (m[4] or 1) .. " × [" .. m[3] .. "].")
     Api.EnvoyerA(de, table.concat({ "R", m[2], "Reçue" }, SEP)) -- accusé de réception
   elseif m[1] == "R" then
+    if not ETATS_REPONSE[m[3]] then
+      return
+    end
     for _, liste in ipairs({ v.envoyees, v.recues }) do
       for _, c in ipairs(liste) do
-        if c.id == m[2] then
+        if c.id == m[2] and (c.a or c.de) == de then -- seule l'autre personne de la commande peut répondre
           c.etat = m[3]
           if m[3] ~= "Reçue" then
             v.nonLues = v.nonLues + 1

@@ -77,16 +77,18 @@ frame:SetScript("OnEvent", function(_, event, ...)
   elseif event == "GUILD_ROSTER_UPDATE" then
     ns.Commandes.ViderBoite() -- quelqu'un a pu se connecter
   elseif event == "CHAT_MSG_ADDON" then
-    local prefixe, texte, _, expediteur = ...
+    local prefixe, texte, canal, expediteur = ...
     if not (Api.EstNotrePrefixe(prefixe) and PtitsCasusDB) then
       return
     end
     local sorte = texte:sub(1, 1)
-    if sorte == "M" then
+    -- Le canal de guilde ne reçoit que des membres : un joueur extérieur ne peut pas s'y glisser.
+    local guilde = canal == "GUILD"
+    if sorte == "M" and guilde then
       Stocker(expediteur, Decoder(texte:sub(2)))
-    elseif sorte == "C" or sorte == "R" or sorte == "G" or sorte == "Q" then
+    elseif ((sorte == "G" or sorte == "Q") and guilde) or ((sorte == "C" or sorte == "R") and canal == "WHISPER") then
       ns.Commandes.Recevoir(texte, expediteur) -- commande d'artisanat, réponse, commande de guilde
-    elseif sorte == "B" or sorte == "D" then
+    elseif (sorte == "B" or sorte == "D") and guilde then
       ns.UI.RecevoirDroits(texte, expediteur) -- maître du butin
     end
   end

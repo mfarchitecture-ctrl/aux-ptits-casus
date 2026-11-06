@@ -263,7 +263,7 @@ end
 local recetteFenetre = UI.TexteCourt(fenetre, 14, "e8e0cc", 388)
 recetteFenetre:SetPoint("TOPLEFT", titreFenetre, "BOTTOMLEFT", 0, -10)
 local recetteChamp = Champ(388)
-recetteChamp:SetMaxLetters(80)
+recetteChamp:SetMaxBytes(80) -- en octets : une lettre accentuée en compte 2, et un message d'addon fait 255 octets au plus
 recetteChamp:SetPoint("TOPLEFT", titreFenetre, "BOTTOMLEFT", 0, -8)
 
 local libelleQuantite = UI.Texte(fenetre, UI.TEXTE, 13, "c9bfa8")
@@ -278,7 +278,7 @@ local libelleNote = UI.Texte(fenetre, UI.TEXTE, 13, "c9bfa8")
 libelleNote:SetPoint("TOPLEFT", libelleQuantite, "TOPLEFT", 90, 0)
 libelleNote:SetText("Note (facultative)")
 local note = Champ(298)
-note:SetMaxLetters(100)
+note:SetMaxBytes(60)
 note:SetPoint("TOPLEFT", libelleNote, "BOTTOMLEFT", 0, -4)
 
 local envoyer = UI.BoutonRouge(fenetre, "Envoyer")
