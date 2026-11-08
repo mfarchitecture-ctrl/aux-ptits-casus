@@ -35,7 +35,17 @@ animateur:SetScript("OnUpdate", function(self)
   end
 end)
 
+-- Les animations ne se jouent qu'une fois par ouverture de l'addon : ensuite (retour sur la page,
+-- message reçu), la page est redessinée directement dans son état final.
+local dejaAffichee = false
+UI.panneau:HookScript("OnHide", function() dejaAffichee = false end)
+local animer = true
+
 local function Animer(delai, appliquer)
+  if not animer then
+    appliquer(1)
+    return
+  end
   table.insert(animations, { debut = GetTime() + delai, appliquer = appliquer })
   appliquer(0)
   animateur:Show()
@@ -569,6 +579,8 @@ end
 local function Rafraichir()
   ToutCacher()
   wipe(animations)
+  animer = not dejaAffichee
+  dejaAffichee = true
   local membres = UI.Membres()
   local titre = Texte(UI.TITRE, 22, "ffd100", 0, 0, "Aux Ptits Casus · Statistiques")
   local sous = Texte(UI.TEXTE, 13, "a89f8a", 0, -titre:GetStringHeight() - 6,
