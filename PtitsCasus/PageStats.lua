@@ -149,7 +149,30 @@ local function TitreSection(x, y, largeur, titre, sousTitre)
   return y - t:GetStringHeight() - 4 - 18 - 14
 end
 
--- Rangée de tuiles : { { valeur, libellé, détail }, ... }. Les valeurs en nombre défilent depuis 0.
+-- Rangée de tuiles : { { valeur, libellé, détail, noms }, ... }. Les valeurs en nombre défilent depuis 0.
+-- noms (facultatif) : { { nom, classe, précision }, ... }, listés dans une bulle au survol de la tuile.
+local MAX_BULLE = 20
+
+local function BulleTuile(self)
+  if not self.noms then
+    return
+  end
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:SetText(self.libelle:GetText(), 1, 0.82, 0)
+  if #self.noms == 0 then
+    GameTooltip:AddLine("Personne pour l'instant.", 0.66, 0.62, 0.54)
+  end
+  for i, n in ipairs(self.noms) do
+    if i > MAX_BULLE then
+      GameTooltip:AddLine("… et " .. (#self.noms - MAX_BULLE) .. " autre(s)", 0.66, 0.62, 0.54)
+      break
+    end
+    local r, g, b = ns.Api.CouleurClasse(n[2])
+    GameTooltip:AddDoubleLine(n[1], n[3] or "", r, g, b, 0.66, 0.62, 0.54)
+  end
+  GameTooltip:Show()
+end
+
 local function Tuiles(x, y, largeur, tuiles)
   local l = (largeur - (#tuiles - 1) * 10) / #tuiles
   for i, t in ipairs(tuiles) do
@@ -169,6 +192,9 @@ local function Tuiles(x, y, largeur, tuiles)
       f.detail = UI.Texte(f, UI.TEXTE, 10, "8a826f")
       f.detail:SetPoint("TOPLEFT", f.libelle, "BOTTOMLEFT", 0, -2)
       f.detail:SetWordWrap(false)
+      f:EnableMouse(true)
+      f:SetScript("OnEnter", BulleTuile)
+      f:SetScript("OnLeave", function() GameTooltip:Hide() end)
       return f
     end)
     tuile:SetSize(l, 88)
@@ -177,6 +203,7 @@ local function Tuiles(x, y, largeur, tuiles)
     tuile.libelle:SetText(t[2])
     tuile.detail:SetWidth(l - 20)
     tuile.detail:SetText(t[3] or "")
+    tuile.noms = t[4]
     if type(t[1]) == "number" then
       local cible = t[1]
       Animer(0.05 * i, function(e) tuile.valeur:SetText(math.floor(cible * e + 0.5)) end)
@@ -338,11 +365,21 @@ local function Composition(y, membres)
   local total, enLigne, n60, addon = 0, 0, 0, 0
   local somme, connus = 0, 0
   local parClasse, parGrade, ordreGrade = {}, {}, {}
+  local nomsEnLigne, noms60, nomsAddon = {}, {}, {} -- listés au survol des tuiles
   for nom, m in pairs(membres) do
     total = total + 1
-    if m.enLigne then enLigne = enLigne + 1 end
-    if (m.niveau or 0) >= 60 then n60 = n60 + 1 end
-    if #(m.metiers or {}) > 0 then addon = addon + 1 end
+    if m.enLigne then
+      enLigne = enLigne + 1
+      table.insert(nomsEnLigne, { nom, m.classe })
+    end
+    if (m.niveau or 0) >= 60 then
+      n60 = n60 + 1
+      table.insert(noms60, { nom, m.classe })
+    end
+    if #(m.metiers or {}) > 0 then
+      addon = addon + 1
+      table.insert(nomsAddon, { nom, m.classe, m.synchro })
+    end
     if m.classe then parClasse[m.classe] = (parClasse[m.classe] or 0) + 1 end
     local grade = m.rang or "Sans grade"
     parGrade[grade] = (parGrade[grade] or 0) + 1
@@ -352,11 +389,14 @@ local function Composition(y, membres)
       somme = somme + m.ilvl
     end
   end
+  for _, liste in ipairs({ nomsEnLigne, noms60, nomsAddon }) do
+    table.sort(liste, function(a, b) return a[1] < b[1] end)
+  end
   y = Tuiles(0, y, L, {
     { total, "Membres" },
-    { enLigne, "En ligne", Pct(enLigne, total) },
-    { n60, "Niveau 60", Pct(n60, total) },
-    { addon, "Avec l'addon", Pct(addon, total) },
+    { enLigne, "En ligne", Pct(enLigne, total), nomsEnLigne },
+    { n60, "Niveau 60", Pct(n60, total), noms60 },
+    { addon, "Avec l'addon", Pct(addon, total), nomsAddon },
     { connus > 0 and math.floor(somme / connus + 0.5) or "—", "ilvl moyen", connus .. " équipement(s) connu(s)" },
   })
 
