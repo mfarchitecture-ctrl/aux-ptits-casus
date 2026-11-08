@@ -1,7 +1,7 @@
 -- Page Statistiques : une seule page qui défile, faite de graphiques animés à l'ouverture
 -- (les axes se tracent, les colonnes montent, les blocs s'empilent, les anneaux tournent).
 -- Composition (tuiles, anneau des classes | colonnes à blocs des grades),
--- Métiers (colonnes avec l'icône du métier) | Raids (boss tués), puis Loot (tuiles, anneau des paliers). Survoler un élément affiche son détail.
+-- Raids (boss tués), puis Loot (tuiles, anneau des paliers). Survoler un élément affiche son détail.
 -- Pas de couleur de classe ici, sauf dans l'anneau des classes : tons dorés de l'addon.
 local _, ns = ...
 local UI = ns.UI
@@ -18,26 +18,6 @@ local OR, OR_FONCE, AXE = "c9a35a", "8c6a3c", "6e5230"
 local GRADES = { "e6b84a", "c9a35a", "a8853f", "8c6a3c", "6e5230" } -- du plus haut grade au plus bas
 local TRANCHE = "Interface\\AddOns\\PtitsCasus\\Media\\Tranche.tga"
 local TRANCHES = 64 -- tranches par anneau
-
--- Icône de chaque métier (noms français et anglais du jeu).
-local ICONES_METIERS = {
-  Alchimie = "Trade_Alchemy", Alchemy = "Trade_Alchemy",
-  Forge = "Trade_BlackSmithing", Blacksmithing = "Trade_BlackSmithing",
-  Couture = "Trade_Tailoring", Tailoring = "Trade_Tailoring",
-  ["Ingénierie"] = "Trade_Engineering", Engineering = "Trade_Engineering",
-  ["Travail du cuir"] = "Trade_LeatherWorking", Leatherworking = "Trade_LeatherWorking",
-  Enchantement = "Trade_Engraving", Enchanting = "Trade_Engraving",
-  Minage = "Trade_Mining", Mining = "Trade_Mining",
-  Herboristerie = "Spell_Nature_NatureTouchGrow", Herbalism = "Spell_Nature_NatureTouchGrow",
-  ["Dépeçage"] = "INV_Misc_Pelt_Wolf_01", Skinning = "INV_Misc_Pelt_Wolf_01",
-  Cuisine = "INV_Misc_Food_15", Cooking = "INV_Misc_Food_15",
-  Secourisme = "Spell_Holy_SealOfSacrifice", ["First Aid"] = "Spell_Holy_SealOfSacrifice",
-  ["Pêche"] = "Trade_Fishing", Fishing = "Trade_Fishing",
-}
-
--- Tous les métiers du jeu, pour montrer ceux que personne n'a.
-local METIERS = { "Alchimie", "Couture", "Cuisine", "Dépeçage", "Enchantement", "Forge", "Herboristerie",
-  "Ingénierie", "Minage", "Pêche", "Secourisme", "Travail du cuir" }
 
 -- Animations : chaque élément animé reçoit une avancée de 0 à 1 (ralentie à la fin).
 local animations = {}
@@ -405,55 +385,6 @@ local function Composition(y, membres)
   return math.min(yg, yd)
 end
 
--- Métiers : pour chaque métier, ses artisans du plus haut niveau au plus bas,
--- puis les métiers que personne n'a encore.
-local function Metiers(x, y, largeur, membres)
-  y = TitreSection(x, y, largeur, "Métiers", "Les artisans ayant l'addon, du plus haut niveau au plus bas.")
-  local artisans, noms = {}, {}
-  for nom, m in pairs(membres) do
-    for _, metier in ipairs(m.metiers or {}) do
-      if not artisans[metier.nom] then
-        artisans[metier.nom] = {}
-        table.insert(noms, metier.nom)
-      end
-      table.insert(artisans[metier.nom], { nom = nom, classe = m.classe, niveau = metier.niveau })
-    end
-  end
-  if #noms == 0 then
-    return Vide(x, y, largeur, "Aucun métier reçu pour l'instant.")
-  end
-  table.sort(noms)
-  for _, metier in ipairs(noms) do
-    local liste = artisans[metier]
-    table.sort(liste, function(a, b)
-      if a.niveau ~= b.niveau then
-        return a.niveau > b.niveau
-      end
-      return a.nom < b.nom
-    end)
-    local parties = {}
-    for _, a in ipairs(liste) do
-      table.insert(parties, "|cff" .. UI.HexClasse(a.classe) .. a.nom .. "|r " .. a.niveau)
-    end
-    Icone(ICONES_METIERS[metier] or "INV_Misc_QuestionMark", 24, x + 12, y - 14)
-    local titre = Texte(UI.TEXTE, 14, "e8e0cc", x + 34, y, metier)
-    local detail = Texte(UI.TEXTE, 13, "a89f8a", x + 34, y - titre:GetStringHeight() - 2,
-      table.concat(parties, " · "), largeur - 34)
-    y = y - titre:GetStringHeight() - 2 - detail:GetStringHeight() - 12
-  end
-  local absents = {}
-  for _, metier in ipairs(METIERS) do
-    if not artisans[metier] then
-      table.insert(absents, metier)
-    end
-  end
-  if #absents > 0 then
-    local fs = Texte(UI.TEXTE, 13, "8a826f", x, y, "Personne : " .. table.concat(absents, ", "), largeur)
-    y = y - fs:GetStringHeight() - 8
-  end
-  return y
-end
-
 -- Raids : soirées et boss tués (nombre de kills par boss, premier kill au survol).
 local function Raids(x, y, largeur)
   y = TitreSection(x, y, largeur, "Raids", "Les soirées de raid et les boss tombés.")
@@ -527,8 +458,7 @@ local function Rafraichir()
     "Les chiffres de la guilde. Survole un graphique pour son détail.", L)
   local y = -titre:GetStringHeight() - 6 - sous:GetStringHeight() - 24
   y = Composition(y, membres) - 30
-  -- Métiers et Raids côte à côte, puis Loot sous la plus longue des deux.
-  y = math.min(Metiers(0, y, COLONNE, membres), Raids(COLONNE + ECART, y, COLONNE)) - 30
+  y = Raids(0, y, L) - 30
   y = Loot(y) - 20
   contenu:SetHeight(-y)
 end

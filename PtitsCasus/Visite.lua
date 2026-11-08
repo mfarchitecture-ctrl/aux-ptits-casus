@@ -21,17 +21,17 @@ local ETAPES = {
     texte = "Clic : ouvrir ou fermer l'addon. Clic droit : les Réglages. Une pastille rouge signale du "
       .. "nouveau dans les commandes." },
   { page = "stats", cible = Menu("stats"), titre = "Statistiques",
-    texte = "Les chiffres de la guilde : classes, grades et métiers. Survole un graphique pour son détail." },
+    texte = "Les chiffres de la guilde : classes, grades, raids et loot. Survole un graphique pour son détail." },
   { page = "membres", cible = Menu("membres"), titre = "Membres",
     texte = "La liste des membres, triable par niveau, classe, nom ou statut. Clic sur un membre : sa fiche, "
-      .. "avec ses métiers. Ta fiche montre aussi ton équipement." },
+      .. "avec ses métiers et son équipement reçu." },
   { page = "membres", cible = Menu("membres"), titre = "Le +0, côté officiers",
     si = function() return UI.Droits().officier end,
     texte = "La colonne +0 de la liste sert aux officiers à donner le +0 d'un joueur pour la soirée. "
       .. "Pour l'instant, seul l'officier qui le pose le voit." },
   { page = "metiers", cible = Menu("metiers"), titre = "Métiers",
-    texte = "Les métiers et les niveaux des membres qui ont l'addon. La liste des recettes n'est pas encore "
-      .. "active." },
+    texte = "Les métiers, les niveaux et les recettes des membres qui ont l'addon. Les recettes d'un joueur "
+      .. "arrivent quand il ouvre la fenêtre de son métier." },
   { page = "commandes", cible = Menu("commandes"), titre = "Commandes",
     texte = "En haut, tes commandes personnelles, reçues et envoyées : l'artisan les accepte, les refuse ou les "
       .. "marque « Faite ». En dessous, les commandes de guilde, visibles par tous : n'importe quel artisan "
@@ -47,10 +47,6 @@ local ETAPES = {
   { page = "reglages", cible = Menu("reglages"), titre = "Réglages",
     texte = "La taille de la fenêtre, le raccourci clavier, le bouton de la minimap et la liste des commandes "
       .. "du chat. Les officiers y trouvent aussi les réglages du loot." },
-  { page = "reglages", cible = Menu("reglages"), titre = "Le maître du butin",
-    si = function() return UI.Droits().officier end,
-    texte = "Le maître de guilde ou un officier désigne le maître du butin, une fois pour toutes : ici, ou "
-      .. "depuis sa fiche dans la page Membres." },
   { titre = "Fin de la visite", texte = "/pc visite relance cette visite.", page = "stats" },
 }
 

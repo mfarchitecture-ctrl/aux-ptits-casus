@@ -70,7 +70,26 @@ local liste = UI.Defilant(zoneListe, LARGEUR_LISTE)
 local function NouvelleLigneMembre()
   local ligne = CreateFrame("Button", nil, liste, "BackdropTemplate")
   ligne:SetSize(LARGEUR_LISTE, 44)
+  ligne:RegisterForClicks("LeftButtonUp", "RightButtonUp")
   UI.Survol(ligne)
+  -- Bulle comme dans la liste de guilde du jeu. La zone n'est affichée que pour un membre connecté.
+  ligne:SetScript("OnEnter", function(self)
+    local m = self.membre
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self.nomMembre, ns.Api.CouleurClasse(m.classe))
+    if m.rang then
+      GameTooltip:AddLine(m.rang, 1, 0.82, 0)
+    end
+    GameTooltip:AddLine(ns.Api.NomClasse(m.classe) .. " de niveau " .. (m.niveau or "?"), 1, 1, 1)
+    if m.enLigne and m.zone and m.zone ~= "" then
+      GameTooltip:AddLine(m.zone, 1, 1, 1)
+    end
+    if m.note and m.note ~= "" then
+      GameTooltip:AddLine(m.note, 1, 0.82, 0, true)
+    end
+    GameTooltip:Show()
+  end)
+  ligne:SetScript("OnLeave", function() GameTooltip:Hide() end)
   ligne.pastille = ligne:CreateTexture(nil, "ARTWORK")
   ligne.pastille:SetSize(8, 8)
   ligne.pastille:SetPoint("LEFT", 8, 0)
@@ -116,15 +135,11 @@ local identite = UI.Texte(fiche, UI.TEXTE, 14, "e8e0cc")
 identite:SetPoint("TOPLEFT", nomFiche, "BOTTOMLEFT", 0, -4)
 local resume = UI.TexteCourt(fiche, 12, "a89f8a", 380)
 resume:SetPoint("TOPLEFT", identite, "BOTTOMLEFT", 0, -3)
+resume:SetPoint("RIGHT", fiche, "RIGHT", -14, 0) -- toute la largeur de la fiche
 -- Date de la dernière synchro de l'équipement, en bas à droite de la fiche.
 local synchro = UI.Texte(fiche, UI.TEXTE, 12, "a89f8a")
 synchro:SetPoint("BOTTOMRIGHT", -14, 12)
 
--- Bouton des officiers et du maître de guilde, en bas à gauche de la fiche : désigner ce membre maître du butin.
-local boutonButin = UI.BoutonSombre(fiche, "Désigner maître du butin")
-boutonButin:SetHeight(28)
-boutonButin.texte:SetFont(UI.TEXTE, 11 * UI.ZOOM, "") -- plus petit : le bouton ne touche pas les armes
-boutonButin:SetPoint("BOTTOMLEFT", 14, 8)
 synchro:SetJustifyH("RIGHT")
 
 -- Autocollant « +0 » dans le coin en haut à droite de la fiche, sans déborder, quand le joueur a un +0.
@@ -220,7 +235,7 @@ local function NouvelEmplacement()
   e:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     local o = self.objet
-    if o and o.lien then -- mon propre objet : la bulle du jeu
+    if o and o.lien then -- objet réel (le mien ou celui reçu d'un membre) : la bulle du jeu
       GameTooltip:SetHyperlink(o.lien)
       GameTooltip:Show()
       return
@@ -247,8 +262,9 @@ local function RemplirEmplacement(e, s, objet)
   e.objet, e.libelle = objet, s[2]
   if objet then
     UI.Habiller(e, "100e0a", UI.QUALITES[objet.qualite][1], 2)
-    e.image:SetTexture(type(objet.icone) == "number" and objet.icone
-      or "Interface\\Icons\\" .. (objet.icone or "INV_Misc_QuestionMark"))
+    local icone = objet.icone or (objet.lien and ns.Api.IconeObjet(objet.lien))
+    e.image:SetTexture(type(icone) == "number" and icone
+      or "Interface\\Icons\\" .. (icone or "INV_Misc_QuestionMark"))
     e.image:SetDesaturated(false)
     e.ilvl:SetText(objet.ilvl)
   else
@@ -346,6 +362,7 @@ function Rafraichir()
   for i, nom in ipairs(noms) do
     lignes[i] = lignes[i] or NouvelleLigneMembre()
     local ligne, m = lignes[i], membres[nom]
+    ligne.nomMembre, ligne.membre = nom, m
     ligne:SetPoint("TOPLEFT", 0, -(i - 1) * 46)
     ligne.pastille:SetShown(m.enLigne == true)
     -- À droite de la ligne : [autocollant +0] [case +0 des officiers].
@@ -370,12 +387,15 @@ function Rafraichir()
     else
       ligne.nom:SetTextColor(Hex("8a826f"))
     end
-    -- Classe, grade, et « Butin » en doré pour le maître du butin désigné.
-    ligne.info:SetText(ns.Api.NomClasse(m.classe) .. " · " .. (m.rang or "?")
-      .. (nom == UI.MaitreButin() and " · |cffffd100Butin|r" or ""))
+    -- Classe et grade.
+    ligne.info:SetText(ns.Api.NomClasse(m.classe) .. " · " .. (m.rang or "?"))
     local choisi = nom == UI.membreChoisi
     UI.Habiller(ligne, choisi and "2a2316" or "13110d", choisi and UI.ACCENT or "13110d")
-    ligne:SetScript("OnClick", function()
+    ligne:SetScript("OnClick", function(_, bouton)
+      if bouton == "RightButton" then
+        ns.Api.MenuJoueur(nom, m.guid) -- clic droit : menu du jeu
+        return
+      end
       UI.membreChoisi = nom
       Rafraichir()
     end)
@@ -392,18 +412,6 @@ function Rafraichir()
   -- Autocollant +0 : animé seulement la première fois qu'on ouvre cette fiche pour ce +0.
   local zero = UI.AZero(nom)
   autocollant:SetShown(zero)
-  -- Maître du butin : le maître de guilde ou un officier le désigne d'ici (ou dans les Réglages).
-  local estButin = nom == UI.MaitreButin()
-  boutonButin:SetShown(UI.Droits().officier)
-  boutonButin.texte:SetText(estButin and "Maître du butin actuel" or "Désigner maître du butin")
-  boutonButin:SetWidth(boutonButin.texte:GetStringWidth() + 28)
-  boutonButin:SetEnabled(not estButin)
-  boutonButin:SetAlpha(estButin and 0.6 or 1)
-  boutonButin:SetScript("OnClick", function()
-    UI.DesignerMaitreButin(nom)
-    print("Aux Ptits Casus : " .. nom .. " est maintenant maître du butin.")
-    UI.RafraichirTout()
-  end)
   if zero and not UI.ZeroVu(nom) then
     UI.MarquerZeroVu(nom)
     UI.AnimerAutocollant(autocollant, fiche, "TOPRIGHT", CENTRE_X, CENTRE_Y)

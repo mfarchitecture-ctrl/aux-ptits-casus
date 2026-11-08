@@ -194,10 +194,8 @@ function C.Recevoir(texte, expediteur)
       g[c.id] = c
       if not ancienne and c.de ~= MonNom() and c.etat == "Ouverte" then
         v.nonLues = v.nonLues + 1
-        print("Aux Ptits Casus : nouvelle commande de guilde de " .. c.de .. " : " .. c.quantite .. " × [" .. c.recette .. "].")
       elseif ancienne and c.de == MonNom() and c.etat == "Prise" and ancienne.etat ~= "Prise" then
         v.nonLues = v.nonLues + 1
-        print("Aux Ptits Casus : " .. c.par .. " se charge de ta commande [" .. c.recette .. "].")
       end
     end
   elseif m[1] == "Q" then
@@ -223,7 +221,6 @@ function C.Recevoir(texte, expediteur)
     table.insert(v.recues, 1,
       { id = m[2], de = de, recette = m[3], quantite = tonumber(m[4]) or 1, note = m[5] or "", etat = "Nouvelle" })
     v.nonLues = v.nonLues + 1
-    print("Aux Ptits Casus : nouvelle commande de " .. de .. " : " .. (m[4] or 1) .. " × [" .. m[3] .. "].")
     Api.EnvoyerA(de, table.concat({ "R", m[2], "Reçue" }, SEP)) -- accusé de réception
   elseif m[1] == "R" then
     if not ETATS_REPONSE[m[3]] then
@@ -235,7 +232,6 @@ function C.Recevoir(texte, expediteur)
           c.etat = m[3]
           if m[3] ~= "Reçue" then
             v.nonLues = v.nonLues + 1
-            print("Aux Ptits Casus : commande [" .. c.recette .. "] : " .. m[3]:lower() .. " par " .. de .. ".")
           end
         end
       end

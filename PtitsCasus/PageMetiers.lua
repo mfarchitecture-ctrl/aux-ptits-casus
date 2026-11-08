@@ -136,16 +136,36 @@ local artisanChoisi -- nom du joueur dont on regarde l'artisanat
 local lignesMetiers, lignesArtisans = {}, {}
 local metierChoisi
 
+-- Les recettes arrivent en identifiants : leurs noms ne sont demandés au jeu qu'une fois.
+local nomsRecettes, idsRecettes = {}, {} -- [id] = nom, et [nom] = id pour la bulle
+
+function UI.NomsRecettes(liste)
+  local noms = {}
+  for _, id in ipairs(liste and liste.ids or {}) do
+    nomsRecettes[id] = nomsRecettes[id] or ns.Api.NomRecette(id)
+    if nomsRecettes[id] then
+      idsRecettes[nomsRecettes[id]] = id
+      table.insert(noms, nomsRecettes[id])
+    end
+  end
+  return noms
+end
+
+-- Métiers secondaires personnels, pas affichés sur cette page.
+local PERSONNELS = { Secourisme = true, ["First Aid"] = true, ["Pêche"] = true, Fishing = true }
+
 -- { ["Couture"] = { { nom, niveau, max, classe, enLigne, recettes = { "Sac en étoffe runique", ... } }, ... }, ... }
 local function RegrouperParMetier()
   local parMetier = {}
   for nom, membre in pairs(UI.Membres()) do
     for _, m in ipairs(membre.metiers or {}) do
-      parMetier[m.nom] = parMetier[m.nom] or {}
-      table.insert(parMetier[m.nom], {
-        nom = nom, niveau = m.niveau, max = m.max, classe = membre.classe, enLigne = membre.enLigne == true,
-        recettes = m.recettes or {},
-      })
+      if not PERSONNELS[m.nom] then
+        parMetier[m.nom] = parMetier[m.nom] or {}
+        table.insert(parMetier[m.nom], {
+          nom = nom, niveau = m.niveau, max = m.max, classe = membre.classe, enLigne = membre.enLigne == true,
+          recettes = m.recettes or UI.NomsRecettes((membre.recettes or {})[m.nom]),
+        })
+      end
     end
   end
   return parMetier
@@ -187,8 +207,10 @@ local function ListeArtisans(artisans)
   return table.concat(parties, "  ·  ")
 end
 
-local videRecettes = UI.Paragraphe(listeRecettes, 14, "a89f8a", LARGEUR_RECETTES,
-  "Recettes pas encore reçues. Elles arrivent quand le joueur ouvre la fenêtre de son métier.")
+-- Métiers de récolte : le jeu n'a pas de recettes pour eux.
+local SANS_RECETTES = { Herboristerie = true, Herbalism = true, ["Dépeçage"] = true, Skinning = true }
+
+local videRecettes = UI.Paragraphe(listeRecettes, 14, "a89f8a", LARGEUR_RECETTES, "")
 videRecettes:SetPoint("TOPLEFT")
 
 local function AfficherArtisanat(a)
@@ -226,15 +248,26 @@ local function AfficherArtisanat(a)
       UI.Survol(ligne)
       ligne.texte = UI.TexteCourt(ligne, 14, "e8e0cc", largeur - 8)
       ligne.texte:SetPoint("LEFT", 4, 0)
+      ligne:SetMotionScriptsWhileDisabled(true) -- bulle aussi sur mes propres recettes
+      ligne:SetScript("OnEnter", function(self)
+        if idsRecettes[self.recette] then
+          ns.Api.BulleRecette(self, idsRecettes[self.recette])
+        end
+      end)
+      ligne:SetScript("OnLeave", function() GameTooltip:Hide() end)
       lignesRecettes[i] = ligne
     end
     local ligne = lignesRecettes[i]
     local colonne, rang = (i - 1) % 2, math.floor((i - 1) / 2)
     ligne:SetPoint("TOPLEFT", colonne * (largeur + 12), -rang * 26)
+    ligne.recette = recette
     ligne.texte:SetText("|cffffd100•|r " .. recette)
     ligne:SetScript("OnClick", function() UI.OuvrirCommande(a.nom, recette) end)
+    ligne:SetEnabled(a.nom ~= UI.Moi()) -- pas de commande à soi-même
     ligne:Show()
   end
+  videRecettes:SetText(SANS_RECETTES[metierChoisi] and "Métier de récolte : pas de recettes."
+    or "Recettes pas encore reçues. Elles arrivent quand le joueur ouvre la fenêtre de son métier.")
   videRecettes:SetShown(#recettes == 0)
   listeRecettes:SetHeight(math.max(30, math.ceil(#recettes / 2) * 26))
 end

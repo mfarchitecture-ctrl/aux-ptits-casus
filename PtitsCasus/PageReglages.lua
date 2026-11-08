@@ -1,5 +1,5 @@
 -- Page Réglages : « Mon affichage » (personnel) et les réglages d'officier
--- (maître du butin, loot, synchronisation). Les choix sont enregistrés dans la sauvegarde.
+-- (droits, loot, synchronisation). Les choix sont enregistrés dans la sauvegarde.
 -- Pour l'instant, seuls la taille de la fenêtre, le bouton de la minimap et
 -- « Forcer ma synchronisation » ont un effet ; les autres choix seront utilisés plus tard.
 local _, ns = ...
@@ -176,9 +176,9 @@ CaseReglage(Ligne(loot, CONTROLE.case, "Annonces en avertissement de raid + cana
 CaseReglage(Ligne(loot, CONTROLE.case, "Annoncer le gagnant dans le canal raid", "« Kéliane remporte [objet] »"), "annoncerGagnant", true)
 loot:SetHeight(-loot.y + 10)
 
--- Droits : rangs de la guilde (lus dans le jeu) et maître du butin désigné.
+-- Droits : rangs de la guilde (lus dans le jeu).
 -- Les rangs sont lus à chaque affichage.
-local droits = Carte("Droits et maître du butin", "Officiers")
+local droits = Carte("Droits", "Officiers")
 droits:SetPoint("TOPLEFT", DEMI + 14, HAUT)
 local explication = UI.Paragraphe(droits, 12, "a89f8a", DEMI - 28,
   "Rangs lus dans la guilde. Le rang juste sous le maître de guilde a les droits d'officier.")
@@ -194,76 +194,9 @@ local colMembres = UI.Texte(droits, UI.TEXTE, 11, "a89f8a")
 colMembres:SetPoint("TOPRIGHT", -14, yEntete)
 colMembres:SetText("MEMBRES")
 local noteDroits = UI.Paragraphe(droits, 12, "a89f8a", DEMI - 28,
-  "Officier : coche les +0. Maître du butin : annonce et attribue les objets ; il garde ce rôle d'un raid à l'autre.")
+  "Officier : coche les +0. Maître du butin : celui du jeu, choisi par le chef de raid, annonce et attribue les objets.")
 
--- Ligne « Maître du butin » : son nom et le bouton pour en choisir un autre.
-local ligneButin = CreateFrame("Frame", nil, droits)
-ligneButin:SetHeight(40)
-local libelleButin = UI.Texte(ligneButin, UI.TEXTE, 14, "e8e0cc")
-libelleButin:SetPoint("LEFT")
-libelleButin:SetText("Maître du butin :")
-local nomButin = UI.Texte(ligneButin, UI.TEXTE, 14, "e8e0cc")
-nomButin:SetPoint("LEFT", libelleButin, "RIGHT", 8, 0)
-local changerButin = UI.BoutonSombre(ligneButin, "Changer")
-changerButin:SetHeight(28)
-changerButin:SetPoint("RIGHT")
-
--- Petite liste des membres pour désigner le maître du butin.
-local choix = UI.Carte(UIParent, "13110d", "8c6a3c")
-choix:SetSize(260, 360)
-choix:SetFrameStrata("DIALOG")
-choix:EnableMouse(true)
-choix:Hide()
-table.insert(UI.fenetres, choix)
-local titreChoix = UI.Texte(choix, UI.TITRE, 14, "ffd100")
-titreChoix:SetPoint("TOPLEFT", 12, -12)
-titreChoix:SetText("Choisir le maître du butin")
-local fermerChoix = UI.BoutonSombre(choix, "Fermer")
-fermerChoix:SetHeight(26)
-fermerChoix:SetPoint("BOTTOMRIGHT", -10, 10)
-fermerChoix:SetScript("OnClick", function() choix:Hide() end)
-local zoneChoix = CreateFrame("Frame", nil, choix)
-zoneChoix:SetPoint("TOPLEFT", 10, -40)
-zoneChoix:SetPoint("BOTTOMRIGHT", -16, 44)
-local listeChoix = UI.Defilant(zoneChoix, 234)
-local lignesChoix = {}
 local Rafraichir
-
-changerButin:SetScript("OnClick", function()
-  local membres = UI.Membres()
-  local noms = {}
-  for nom in pairs(membres) do
-    table.insert(noms, nom)
-  end
-  table.sort(noms)
-  for _, b in ipairs(lignesChoix) do
-    b:Hide()
-  end
-  for i, nom in ipairs(noms) do
-    if not lignesChoix[i] then
-      local b = CreateFrame("Button", nil, listeChoix)
-      b:SetSize(234, 24)
-      UI.Survol(b)
-      b.texte = UI.Texte(b, UI.TEXTE, 14, "e8e0cc")
-      b.texte:SetPoint("LEFT", 6, 0)
-      lignesChoix[i] = b
-    end
-    local b = lignesChoix[i]
-    b:SetPoint("TOPLEFT", 0, -(i - 1) * 24)
-    b.texte:SetText(nom)
-    b.texte:SetTextColor(ns.Api.CouleurClasse(membres[nom].classe))
-    b:SetScript("OnClick", function()
-      UI.DesignerMaitreButin(nom)
-      choix:Hide()
-      UI.RafraichirTout()
-    end)
-    b:Show()
-  end
-  listeChoix:SetHeight(#noms * 24)
-  choix:ClearAllPoints()
-  choix:SetPoint("TOPLEFT", changerButin, "BOTTOMRIGHT", 8, 0)
-  choix:Show()
-end)
 local lignesRangs = {}
 
 local function NouvelleLigneRang()
@@ -291,7 +224,7 @@ local forcer = UI.BoutonRouge(ligneSynchro, "Forcer ma synchronisation")
 forcer:SetPoint("RIGHT")
 forcer:SetScript("OnClick", function()
   ns.ForcerSynchro()
-  print("Aux Ptits Casus : tes métiers ont été renvoyés à la guilde.")
+  print("Aux Ptits Casus : tes métiers, ton équipement et tes recettes ont été renvoyés à la guilde.")
 end)
 synchro:SetHeight(-synchro.y + 10)
 
@@ -301,6 +234,7 @@ local listeJoueurs = UI.Paragraphe(commandesJoueurs, 13, "c9bfa8", DEMI - 28, ta
   "/pc ou /ig : ouvrir ou fermer la fenêtre",
   "/pc visite : visite guidée de l'addon",
   "/metiers : métiers reçus, dans le chat",
+  "/craft nom : qui sait fabriquer une recette, dans le chat",
   "/pc loot : rouvrir la fenêtre de loot",
 }, "\n"))
 listeJoueurs:SetPoint("TOPLEFT", 14, commandesJoueurs.y)
@@ -323,8 +257,7 @@ function Rafraichir()
 
   -- Raideurs et recrues : « Mon affichage » et Synchronisation.
   -- Officiers : en plus, Loot sous Synchronisation.
-  -- Officiers et maître de guilde : en plus, les droits (modifiables par le maître de guilde seul)
-  -- et le maître du butin sous « Mon affichage ».
+  -- Officiers et maître de guilde : en plus, les droits sous « Mon affichage ».
   local d = UI.Droits()
   sous:SetText(d.officier
     and "« Mon affichage » ne concerne que toi. Le reste est réservé aux officiers."
@@ -363,13 +296,6 @@ function Rafraichir()
   if #UI.Rangs() == 0 then
     y = y - 10
   end
-  -- Maître du butin désigné, sous les rangs.
-  ligneButin:SetPoint("TOPLEFT", 14, y - 4)
-  ligneButin:SetPoint("TOPRIGHT", -14, y - 4)
-  local butin = UI.MaitreButin()
-  nomButin:SetText(butin or "personne")
-  nomButin:SetTextColor(ns.Api.CouleurClasse(butin and (UI.Membres()[butin] or {}).classe))
-  y = y - 48
   noteDroits:SetPoint("TOPLEFT", 14, y - 8)
   droits:SetHeight(-y + 8 + noteDroits:GetStringHeight() + 14)
 

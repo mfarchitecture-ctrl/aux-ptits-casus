@@ -34,6 +34,13 @@ function Api.OuvrirChuchotement(nom)
   ChatFrame_OpenChat("/w " .. nom .. " ")
 end
 
+-- Menu du jeu sur un joueur (Inviter, Chuchoter, Ignorer…), le même que dans la liste de guilde.
+function Api.MenuJoueur(nom, guid)
+  if UnitPopup_OpenMenu then
+    UnitPopup_OpenMenu("GUILD", { name = nom, guid = guid })
+  end
+end
+
 -- Nom d'un joueur (unité du jeu). Sur Forever, le jeu donne le prénom puis le nom de famille : "Hamax Budok".
 local function NomUnite(unite)
   local prenom, nomFamille = UnitNameUnmodified(unite)
@@ -48,12 +55,18 @@ function Api.MonNom()
   return NomUnite("player")
 end
 
--- "Nom-Royaume" -> "Nom" si même royaume.
+-- Nom comme dans la liste de guilde, sans ce que le jeu ajoute après un tiret : "Hamax Budok-PvE" -> "Hamax Budok".
 function Api.NomCourt(nom)
-  return Ambiguate(nom, "guild")
+  return (Ambiguate(nom, "guild"):match("^[^-]+"))
 end
 
--- Renvoie { ["Nom"] = { classe = "MAGE", rang = "Officier", rangIndex = 1, niveau = 60, enLigne = true }, ... }
+-- Mon niveau d'objet moyen (équipement porté).
+function Api.MonNiveauObjet()
+  local _, ilvl = GetAverageItemLevel()
+  return ilvl and math.floor(ilvl)
+end
+
+-- Renvoie { ["Nom"] = { classe = "MAGE", rang = "Officier", rangIndex = 1, niveau = 60, enLigne = true, zone = "Sombrivage", note = "Soins" }, ... }
 -- rangIndex : 0 pour le maître de guilde, puis 1, 2… en descendant.
 -- Le joueur lui-même est toujours inclus, même hors guilde, avec sa race et son niveau d'objet.
 function Api.LireGuilde()
@@ -61,9 +74,10 @@ function Api.LireGuilde()
   if IsInGuild() then
     C_GuildInfo.GuildRoster() -- demande une mise à jour pour la prochaine fois
     for i = 1, GetNumGuildMembers() do
-      local nom, rang, rangIndex, niveau, _, _, _, _, enLigne, _, classe = GetGuildRosterInfo(i)
+      local nom, rang, rangIndex, niveau, _, zone, note, _, enLigne, _, classe, _, _, _, _, _, guid = GetGuildRosterInfo(i)
       if nom then
-        membres[Api.NomCourt(nom)] = { classe = classe, rang = rang, rangIndex = rangIndex, niveau = niveau, enLigne = enLigne }
+        membres[Api.NomCourt(nom)] = { classe = classe, rang = rang, rangIndex = rangIndex, niveau = niveau, enLigne = enLigne,
+          zone = zone, note = note, guid = guid }
       end
     end
   end
@@ -74,11 +88,40 @@ function Api.LireGuilde()
   moi.rangIndex = moi.rangIndex or monRangIndex
   moi.niveau = UnitLevel("player")
   moi.race = UnitRace("player")
-  local _, ilvl = GetAverageItemLevel()
-  moi.ilvl = ilvl and math.floor(ilvl)
+  moi.ilvl = Api.MonNiveauObjet()
   moi.enLigne = true
   membres[Api.MonNom()] = moi
   return membres
+end
+
+-- Ce joueur est-il dans la liste de guilde ? (Sans redemander la liste au serveur.)
+function Api.EstMembre(nom)
+  for i = 1, GetNumGuildMembers() do
+    local nomGuilde = GetGuildRosterInfo(i)
+    if nomGuilde and Api.NomCourt(nomGuilde) == nom then
+      return true
+    end
+  end
+  return false
+end
+
+local NOM_GUILDE = "Aux Ptits Casus" -- à changer si la guilde est renommée
+
+-- Le joueur est-il dans notre guilde ? (Tous les joueurs ne le sont pas : un PU peut avoir l'addon.)
+function Api.DansNotreGuilde()
+  return GetGuildInfo("player") == NOM_GUILDE
+end
+
+-- Suis-je le maître du butin du jeu ? Il est choisi par le chef de groupe ou de raid.
+function Api.SuisMaitreButin()
+  local methode, partie, raid = C_PartyInfo.GetLootMethod()
+  if methode ~= Enum.LootMethod.Masterlooter then
+    return false
+  end
+  if IsInRaid() then
+    return raid ~= nil and UnitIsUnit("raid" .. raid, "player")
+  end
+  return partie == 0
 end
 
 -- Rangs de la guilde, du plus haut au plus bas : { { nom = "Officier", membres = 4 }, ... }
@@ -99,11 +142,21 @@ function Api.LireRangs()
   return rangs
 end
 
--- Unité du jeu ("target"…) d'un joueur dont le modèle 3D peut s'afficher : pour l'instant,
--- seulement s'il est ta cible. nil sinon.
+-- Unité du jeu ("target", "raid3"…) d'un joueur dont le modèle 3D peut s'afficher : ta cible à portée,
+-- ou un membre de ton groupe ou raid, même loin (la fenêtre d'inspection du jeu y arrive). nil sinon.
 function Api.UniteVisible(nom)
-  if UnitExists("target") and NomUnite("target") == nom then
-    return "target"
+  local unites = { "target" }
+  local prefixe, nombre = "party", 4
+  if IsInRaid() then
+    prefixe, nombre = "raid", 40
+  end
+  for i = 1, nombre do
+    table.insert(unites, prefixe .. i)
+  end
+  for _, unite in ipairs(unites) do
+    if UnitExists(unite) and (unite ~= "target" or UnitIsVisible(unite)) and NomUnite(unite) == nom then
+      return unite
+    end
   end
 end
 
@@ -143,11 +196,68 @@ function Api.LireMetiers()
   return metiers
 end
 
+-- Recettes apprises du métier ouvert : "Alchimie", { 2329, 2330, ... }. nil si la fenêtre montre
+-- le métier d'un autre joueur, un métier que je n'ai pas, ou si la liste n'est pas encore prête.
+-- Le jeu ne donne les recettes que fenêtre de métier ouverte. Un identifiant de recette est un identifiant de sort.
+function Api.LireRecettes()
+  local ui = C_TradeSkillUI
+  if (ui.IsTradeSkillLinked and ui.IsTradeSkillLinked()) or (ui.IsTradeSkillGuild and ui.IsTradeSkillGuild())
+    or (ui.IsNPCCrafting and ui.IsNPCCrafting()) then
+    return nil
+  end
+  local info = ui.GetBaseProfessionInfo()
+  local metier = info and (info.parentProfessionName or info.professionName)
+  local connu = false
+  for _, m in ipairs(Api.LireMetiers()) do
+    connu = connu or m.nom == metier
+  end
+  if not connu then
+    return nil
+  end
+  local ids = {}
+  for _, id in ipairs(ui.GetAllRecipeIDs()) do
+    local recette = ui.GetRecipeInfo(id)
+    if recette and recette.learned then
+      table.insert(ids, id)
+    end
+  end
+  if #ids == 0 then
+    return nil
+  end
+  table.sort(ids)
+  return metier, ids
+end
+
+function Api.NomRecette(id)
+  return C_Spell.GetSpellName(id)
+end
+
+-- Bulle d'une recette : l'objet fabriqué si le jeu le donne, sinon la recette elle-même.
+function Api.BulleRecette(cadre, id)
+  GameTooltip:SetOwner(cadre, "ANCHOR_RIGHT")
+  local ok, objet = pcall(C_TradeSkillUI.GetRecipeOutputItemData, id)
+  if ok and objet and objet.hyperlink then
+    GameTooltip:SetHyperlink(objet.hyperlink)
+  else
+    GameTooltip:SetSpellByID(id)
+  end
+  GameTooltip:Show()
+end
+
 local EMPLACEMENTS = {
   tete = 1, cou = 2, epaules = 3, chemise = 4, torse = 5, taille = 6, jambes = 7, pieds = 8, poignets = 9, mains = 10,
   doigt1 = 11, doigt2 = 12, bijou1 = 13, bijou2 = 14, dos = 15, arme = 16, mainGauche = 17, relique = 18, tabard = 19,
 }
 local QUALITE = { [0] = "c", [1] = "c", [2] = "u", [3] = "r" } -- au-delà : épique
+
+function Api.EstEmplacement(cle)
+  return EMPLACEMENTS[cle] ~= nil
+end
+
+-- Icône d'un objet, d'après son lien.
+function Api.IconeObjet(lien)
+  return C_Item.GetItemIconByID(lien)
+end
 
 -- Mon équipement : { tete = { nom, lien, qualite = "r", ilvl = 62, icone = 123456 }, ... }
 function Api.LireEquipement()

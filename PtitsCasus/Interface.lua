@@ -277,6 +277,10 @@ function UI.Membres()
     local nom = ns.Api.NomCourt(nomComplet)
     membres[nom] = membres[nom] or { enLigne = false }
     membres[nom].metiers = recu.metiers
+    membres[nom].recettes = recu.recettes
+    membres[nom].equipement = recu.equipement
+    membres[nom].ilvl = membres[nom].ilvl or recu.ilvl
+    membres[nom].synchro = recu.dateEquipement and date("le %d/%m à %H:%M", recu.dateEquipement)
     membres[nom].addon = true
   end
   return membres
@@ -404,32 +408,13 @@ end
 local SIMULATIONS = {
   maitre = { rang = "Maître de guilde", maitre = true, officier = true, butin = true },
   officier = { rang = "Officier", officier = true },
-  butin = { rang = "Maître du butin", officier = true, butin = true },
+  butin = { rang = "Maître du butin", butin = true },
   raideur = { rang = "Raideur" },
   recrue = { rang = "Recrue" },
 }
 
--- Maître du butin : un membre désigné par le maître de guilde ou un officier, une fois pour toutes. Personne par défaut.
--- Partagé avec la guilde : voir UI.RecevoirDroits.
-function UI.MaitreButin()
-  if ns.demo then
-    return ns.Demo.maitreButin
-  end
-  return UI.Reglage("maitreButin", nil)
-end
-
-function UI.DesignerMaitreButin(nom)
-  if ns.demo then
-    ns.Demo.maitreButin = nom
-  else
-    UI.Regler("maitreButin", nom)
-    UI.Regler("maitreButinDate", ns.Api.Heure())
-    UI.EnvoyerButin()
-  end
-end
-
 -- Ce que le joueur peut voir et faire : { rang, maitre, officier, butin }.
--- D'après son grade, les droits par rang des Réglages et le maître du butin désigné,
+-- D'après son rang dans la guilde et le maître du butin du jeu,
 -- ou d'après le grade simulé (/pc maitre, /pc butin…).
 function UI.Droits()
   if ns.simulation then
@@ -439,65 +424,11 @@ function UI.Droits()
   local rang = moi.rang
   local droits = { rang = rang or "Sans guilde", maitre = moi.rangIndex == 0 }
   droits.officier = droits.maitre or moi.rangIndex == UI.RANG_OFFICIER
-  droits.butin = droits.maitre or UI.Moi() == UI.MaitreButin()
+  droits.butin = ns.Api.DansNotreGuilde() and ns.Api.SuisMaitreButin()
   if ns.admin and UI.Reglage("admin", false) then
     droits.maitre, droits.officier, droits.butin = true, true, true
   end
   return droits
-end
-
--- Partage du maître du butin avec la guilde. Messages :
--- "B" + date ~ nom (maître de guilde ou officier) ; "D" : demande envoyée à la connexion.
--- À la réception, le grade de l'expéditeur est vérifié dans la liste de guilde du jeu.
-local function PeutDesigner(nomComplet)
-  local m = ns.Api.LireGuilde()[ns.Api.NomCourt(nomComplet)]
-  if not m then
-    return false
-  end
-  return m.rangIndex == 0 or m.rangIndex == UI.RANG_OFFICIER
-end
-
-function UI.EnvoyerButin()
-  local date = UI.Reglage("maitreButinDate", 0)
-  if not ns.demo and date > 0 then
-    ns.Api.EnvoyerGuilde("B" .. date .. "~" .. UI.Reglage("maitreButin", ""))
-  end
-end
-
--- Seuls le maître de guilde et les officiers envoient le maître du butin.
-local function EnvoyerSiOfficier()
-  if PeutDesigner(ns.Api.MonNom()) then
-    UI.EnvoyerButin()
-  end
-end
-
--- À la connexion et avec « Forcer ma synchronisation ».
-function UI.SynchroDroits()
-  ns.Api.EnvoyerGuilde("D")
-  EnvoyerSiOfficier()
-end
-
-function UI.RecevoirDroits(texte, expediteur)
-  local sorte, reste = texte:sub(1, 1), texte:sub(2)
-  if ns.Api.NomCourt(expediteur) == ns.Api.NomCourt(ns.Api.MonNom()) then
-    return -- le jeu nous renvoie nos propres messages de guilde
-  end
-  if sorte == "D" then
-    EnvoyerSiOfficier()
-    return
-  elseif sorte == "B" and PeutDesigner(expediteur) then
-    local date, nom = reste:match("^(%d+)~(.+)$") -- message abîmé : ignoré
-    if not date or tonumber(date) <= UI.Reglage("maitreButinDate", 0) then
-      return
-    end
-    UI.Regler("maitreButinDate", tonumber(date))
-    UI.Regler("maitreButin", nom)
-  else
-    return
-  end
-  if UI.panneau:IsShown() then
-    UI.RafraichirTout()
-  end
 end
 
 -- Panneau déplaçable, se ferme avec Échap.
@@ -913,6 +844,10 @@ SlashCmdList.PTITSCASUS = function(argument)
     RafraichirTout()
   elseif argument == "visite" then
     UI.LancerVisite()
+  elseif argument == "debug" then
+    -- Affiche dans mon chat chaque message de l'addon reçu (test des échanges). Même commande : arrêter.
+    ns.debug = not ns.debug
+    print("Aux Ptits Casus : affichage des messages reçus " .. (ns.debug and "activé" or "coupé") .. ".")
   elseif ns.admin and argument == "reduit" then
     ns.demo = true
     UI.membreChoisi = nil
