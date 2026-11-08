@@ -226,6 +226,39 @@ local function Vide(x, y, largeur, texte)
   return y - fs:GetStringHeight() - 8
 end
 
+-- Survol de l'anneau : la part sous la souris, d'après sa distance au centre et son angle.
+local function SurvolAnneau(self)
+  local echelle = self:GetEffectiveScale()
+  local sx, sy = GetCursorPosition()
+  local cx, cy = self:GetCenter()
+  local dx, dy = sx / echelle - cx, sy / echelle - cy
+  local distance = math.sqrt(dx * dx + dy * dy)
+  local partie
+  if distance >= self.rayon * 0.55 and distance <= self.rayon then
+    -- Angle depuis le haut, dans le sens des aiguilles d'une montre, comme les parts.
+    local cible = (math.atan2(dx, dy) % (2 * math.pi)) / (2 * math.pi) * self.total
+    local cumul = 0
+    for _, s in ipairs(self.segments) do
+      cumul = cumul + s[1]
+      if cible <= cumul then
+        partie = s
+        break
+      end
+    end
+  end
+  if partie ~= self.partie then
+    self.partie = partie
+    if partie then
+      GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+      GameTooltip:SetText(partie[4], 1, 0.82, 0)
+      GameTooltip:AddLine(partie[5], 1, 1, 1, true)
+      GameTooltip:Show()
+    else
+      GameTooltip:Hide()
+    end
+  end
+end
+
 -- Anneau qui se remplit en tournant : { { valeur, couleur, icône, titre, info }, ... }.
 -- Total au centre ; autour, l'icône et le nombre de chaque part (détail au survol).
 local function Anneau(x, y, largeur, segments)
@@ -278,6 +311,21 @@ local function Anneau(x, y, largeur, segments)
     end)
     Survol(ix - 14, iy + 12, 28, 36, s[4], s[5])
   end
+  local zone = Prendre("anneau", function()
+    local z = CreateFrame("Frame", nil, contenu)
+    z:EnableMouse(true)
+    z:SetScript("OnEnter", function(self) self:SetScript("OnUpdate", SurvolAnneau) end)
+    z:SetScript("OnLeave", function(self)
+      self:SetScript("OnUpdate", nil)
+      self.partie = nil
+      GameTooltip:Hide()
+    end)
+    return z
+  end)
+  zone:SetFrameLevel(contenu:GetFrameLevel()) -- sous les zones des icônes, qui gardent leur bulle
+  zone:SetSize(2 * rayon, 2 * rayon)
+  zone:SetPoint("CENTER", contenu, "TOPLEFT", cx, cy)
+  zone.segments, zone.total, zone.rayon, zone.partie = segments, total, rayon, nil
   return cy - rayon - 40
 end
 
