@@ -339,6 +339,20 @@ local function Barres(x, y, largeur, barres)
   return y - 6
 end
 
+-- Noms en couleur de classe, un par ligne, pour une info-bulle : { { nom, classe }, ... }.
+local function ListeNoms(noms)
+  table.sort(noms, function(a, b) return a[1] < b[1] end)
+  local lignes = {}
+  for i, n in ipairs(noms) do
+    if i > MAX_BULLE then
+      table.insert(lignes, "|cffa89f8a… et " .. (#noms - MAX_BULLE) .. " autre(s)|r")
+      break
+    end
+    table.insert(lignes, "|cff" .. UI.HexClasse(n[2]) .. n[1] .. "|r")
+  end
+  return table.concat(lignes, "\n")
+end
+
 -- Pourcentage arrondi ("18 %").
 local function Pct(n, total)
   return total > 0 and (math.floor(n * 100 / total + 0.5) .. " %") or "0 %"
@@ -366,6 +380,7 @@ local function Composition(y, membres)
   local somme, connus = 0, 0
   local parClasse, parGrade, ordreGrade = {}, {}, {}
   local nomsEnLigne, noms60, nomsAddon = {}, {}, {} -- listés au survol des tuiles
+  local nomsClasse, nomsGrade = {}, {} -- listés au survol de l'anneau et des colonnes
   for nom, m in pairs(membres) do
     total = total + 1
     if m.enLigne then
@@ -380,9 +395,15 @@ local function Composition(y, membres)
       addon = addon + 1
       table.insert(nomsAddon, { nom, m.classe, m.synchro })
     end
-    if m.classe then parClasse[m.classe] = (parClasse[m.classe] or 0) + 1 end
+    if m.classe then
+      parClasse[m.classe] = (parClasse[m.classe] or 0) + 1
+      nomsClasse[m.classe] = nomsClasse[m.classe] or {}
+      table.insert(nomsClasse[m.classe], { nom, m.classe })
+    end
     local grade = m.rang or "Sans grade"
     parGrade[grade] = (parGrade[grade] or 0) + 1
+    nomsGrade[grade] = nomsGrade[grade] or {}
+    table.insert(nomsGrade[grade], { nom, m.classe })
     ordreGrade[grade] = m.rangIndex or 99
     if m.ilvl then
       connus = connus + 1
@@ -405,7 +426,7 @@ local function Composition(y, membres)
   for _, c in ipairs(Trier(parClasse)) do
     local nom = ns.Api.NomClasse(c[1])
     table.insert(segments, { c[2], UI.HexClasse(c[1]), ns.Api.IconeClasse(c[1]), nom,
-      c[2] .. " membre(s), " .. Pct(c[2], total) .. " de la guilde" })
+      c[2] .. " membre(s), " .. Pct(c[2], total) .. " de la guilde\n" .. ListeNoms(nomsClasse[c[1]]) })
   end
   local yg = SousTitre(0, y, "Classes")
   yg = #segments > 0 and Anneau(0, yg, COLONNE, segments) or Vide(0, yg, COLONNE, "Aucun membre.")
@@ -418,7 +439,7 @@ local function Composition(y, membres)
   local colonnes = {}
   for i, g in ipairs(grades) do
     table.insert(colonnes, { g[2], GRADES[math.min(i, #GRADES)], g[1], g[1],
-      g[2] .. " membre(s), " .. Pct(g[2], total) .. " de la guilde" })
+      g[2] .. " membre(s), " .. Pct(g[2], total) .. " de la guilde\n" .. ListeNoms(nomsGrade[g[1]]) })
   end
   local x2 = COLONNE + ECART
   local yd = Blocs(x2, SousTitre(x2, y, "Grades"), COLONNE, colonnes)
