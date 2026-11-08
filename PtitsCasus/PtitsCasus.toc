@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: Aux Ptits Casus
-## Version: 1.0.1
+## Version: 1.0.2
 ## Notes: Addon de la guilde Aux Ptits Casus
 ## SavedVariables: PtitsCasusDB
 ## OptionalDeps: EllesmereUI
