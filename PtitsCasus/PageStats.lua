@@ -105,8 +105,15 @@ local function Icone(chemin, taille, x, y)
   return t
 end
 
--- Zone invisible qui affiche une info-bulle au survol.
-local function Survol(x, y, largeur, hauteur, titre, info)
+-- Clic sur un élément de la composition : la liste des membres.
+local function VersMembres(self)
+  if self.clic then
+    UI.AfficherPage("membres")
+  end
+end
+
+-- Zone invisible qui affiche une info-bulle au survol (et, si clic, ouvre la liste des membres).
+local function Survol(x, y, largeur, hauteur, titre, info, clic)
   local f = Prendre("survol", function()
     local z = CreateFrame("Frame", nil, contenu)
     z:EnableMouse(true)
@@ -117,11 +124,12 @@ local function Survol(x, y, largeur, hauteur, titre, info)
       GameTooltip:Show()
     end)
     z:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    z:SetScript("OnMouseUp", VersMembres)
     return z
   end)
   f:SetPoint("TOPLEFT", x, y)
   f:SetSize(largeur, hauteur)
-  f.titre, f.info = titre, info
+  f.titre, f.info, f.clic = titre, info, clic
 end
 
 -- Axe horizontal (à la hauteur y) ou vertical (de y vers le bas) qui se trace.
@@ -195,6 +203,7 @@ local function Tuiles(x, y, largeur, tuiles)
       f:EnableMouse(true)
       f:SetScript("OnEnter", BulleTuile)
       f:SetScript("OnLeave", function() GameTooltip:Hide() end)
+      f:SetScript("OnMouseUp", VersMembres)
       return f
     end)
     tuile:SetSize(l, 88)
@@ -203,7 +212,7 @@ local function Tuiles(x, y, largeur, tuiles)
     tuile.libelle:SetText(t[2])
     tuile.detail:SetWidth(l - 20)
     tuile.detail:SetText(t[3] or "")
-    tuile.noms = t[4]
+    tuile.noms, tuile.clic = t[4], t[4] ~= nil
     if type(t[1]) == "number" then
       local cible = t[1]
       Animer(0.05 * i, function(e) tuile.valeur:SetText(math.floor(cible * e + 0.5)) end)
@@ -261,7 +270,7 @@ end
 
 -- Anneau qui se remplit en tournant : { { valeur, couleur, icône, titre, info }, ... }.
 -- Total au centre ; autour, l'icône et le nombre de chaque part (détail au survol).
-local function Anneau(x, y, largeur, segments)
+local function Anneau(x, y, largeur, segments, clic)
   local rayon = 62
   local cx, cy = x + largeur / 2, y - rayon - 30
   local total = 0
@@ -309,7 +318,7 @@ local function Anneau(x, y, largeur, segments)
       end
       nombre:SetAlpha(e)
     end)
-    Survol(ix - 14, iy + 12, 28, 36, s[4], s[5])
+    Survol(ix - 14, iy + 12, 28, 36, s[4], s[5], clic)
   end
   local zone = Prendre("anneau", function()
     local z = CreateFrame("Frame", nil, contenu)
@@ -320,12 +329,13 @@ local function Anneau(x, y, largeur, segments)
       self.partie = nil
       GameTooltip:Hide()
     end)
+    z:SetScript("OnMouseUp", VersMembres)
     return z
   end)
   zone:SetFrameLevel(contenu:GetFrameLevel()) -- sous les zones des icônes, qui gardent leur bulle
   zone:SetSize(2 * rayon, 2 * rayon)
   zone:SetPoint("CENTER", contenu, "TOPLEFT", cx, cy)
-  zone.segments, zone.total, zone.rayon, zone.partie = segments, total, rayon, nil
+  zone.segments, zone.total, zone.rayon, zone.partie, zone.clic = segments, total, rayon, nil, clic
   return cy - rayon - 40
 end
 
@@ -358,7 +368,7 @@ local function Blocs(x, y, largeur, colonnes)
     else
       TexteCentre(11, "c9bfa8", px + l / 2, base - 12, c[3] or "")
     end
-    Survol(px - 4, base + 6 + nb * PAS_BLOC, l + 8, nb * PAS_BLOC + 40, c[4], c[5])
+    Survol(px - 4, base + 6 + nb * PAS_BLOC, l + 8, nb * PAS_BLOC + 40, c[4], c[5], true)
   end
   return base - 36
 end
@@ -477,7 +487,7 @@ local function Composition(y, membres)
       c[2] .. " membre(s), " .. Pct(c[2], total) .. " de la guilde\n" .. ListeNoms(nomsClasse[c[1]]) })
   end
   local yg = SousTitre(0, y, "Classes")
-  yg = #segments > 0 and Anneau(0, yg, COLONNE, segments) or Vide(0, yg, COLONNE, "Aucun membre.")
+  yg = #segments > 0 and Anneau(0, yg, COLONNE, segments, true) or Vide(0, yg, COLONNE, "Aucun membre.")
 
   local grades = {}
   for grade, n in pairs(parGrade) do
