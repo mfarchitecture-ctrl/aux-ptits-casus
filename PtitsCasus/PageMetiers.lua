@@ -125,6 +125,10 @@ retour:SetPoint("LEFT", voirFiche, "RIGHT", 8, 0)
 local aideRecettes = UI.Texte(artisanat, UI.TEXTE, 12, "a89f8a")
 aideRecettes:SetPoint("BOTTOMLEFT", 20, 12)
 aideRecettes:SetText("Clic sur une recette : la commander.")
+-- Date de la dernière synchro des recettes, en bas à droite (comme sur la fiche personnage).
+local synchroRecettes = UI.Texte(artisanat, UI.TEXTE, 12, "a89f8a")
+synchroRecettes:SetPoint("BOTTOMRIGHT", -14, 12)
+synchroRecettes:SetJustifyH("RIGHT")
 local zoneRecettes = CreateFrame("Frame", nil, artisanat)
 zoneRecettes:SetPoint("TOPLEFT", 12, -88)
 zoneRecettes:SetPoint("BOTTOMRIGHT", -12, 36)
@@ -164,6 +168,7 @@ local function RegrouperParMetier()
         table.insert(parMetier[m.nom], {
           nom = nom, niveau = m.niveau, max = m.max, classe = membre.classe, enLigne = membre.enLigne == true,
           recettes = m.recettes or UI.NomsRecettes((membre.recettes or {})[m.nom]),
+          dateRecettes = ((membre.recettes or {})[m.nom] or {}).date,
         })
       end
     end
@@ -217,6 +222,9 @@ local function AfficherArtisanat(a)
   titreMetier:SetText(metierChoisi .. " de " .. a.nom)
   titreMetier:SetTextColor(ns.Api.CouleurClasse(a.classe))
   detailMetier:SetText(a.niveau .. " / " .. a.max .. " · " .. #a.recettes .. " recette(s)")
+  -- Mes propres recettes se lisent dans le jeu : pas de date.
+  synchroRecettes:SetText(a.nom ~= UI.Moi() and a.dateRecettes
+    and date("Recettes synchronisées le %d/%m à %H:%M", a.dateRecettes) or "")
   voirFiche:SetScript("OnClick", function() UI.OuvrirFiche(a.nom) end)
   -- Chuchoter : ouvre seulement « /w Nom » dans le chat ; grisé si le joueur est hors ligne.
   chuchoter:SetEnabled(a.enLigne)

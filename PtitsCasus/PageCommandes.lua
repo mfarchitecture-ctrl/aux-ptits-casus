@@ -85,6 +85,16 @@ local function NouvelleCarte()
     b:SetPoint("BOTTOMLEFT", 12 + (j - 1) * 126, 10)
     carte.boutons[j] = b
   end
+  -- Bulle au survol, seulement si la carte a un texte de bulle (commandes de guilde).
+  carte:EnableMouse(true)
+  carte:SetScript("OnEnter", function(self)
+    if self.bulle then
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:SetText(self.bulle, 1, 1, 1)
+      GameTooltip:Show()
+    end
+  end)
+  carte:SetScript("OnLeave", function() GameTooltip:Hide() end)
   return carte
 end
 
@@ -103,6 +113,7 @@ local function Remplir(carte, commande, joueurs, etat, actions)
   carte.recette:SetText(commande.quantite .. " × [" .. commande.recette .. "]")
   carte.joueur:SetText(joueurs)
   carte.note:SetText(commande.note ~= "" and ("« " .. commande.note .. " »") or "")
+  carte.bulle = nil
   local couleurs = ETATS[commande.etat] or ETATS["En attente"]
   carte.etat.fond:SetColorTexture(Hex(couleurs[1]))
   carte.etat.texte:SetTextColor(Hex(couleurs[2]))
@@ -209,6 +220,12 @@ local function Rafraichir()
     local joueurs = "De " .. Nom(membres, c.de) .. (c.par and (" · prise par " .. Nom(membres, c.par)) or "")
     local etat = c.etat == "Prise" and "En cours" or c.etat
     Remplir(carte, c, joueurs, etat, ActionsGuilde(c, moi))
+    local reste = C.Expiration(c)
+    if reste then
+      local duree = reste >= 86400 and (math.floor(reste / 86400) .. " j")
+        or reste >= 3600 and (math.floor(reste / 3600) .. " h") or "moins d'une heure"
+      carte.bulle = (c.etat == "Ouverte" and "Expire dans " or "Retirée de la liste dans ") .. duree
+    end
   end
   y = y - math.max(math.ceil(#guilde / 2) * PAS, 24)
 
@@ -301,7 +318,7 @@ function UI.OuvrirCommande(artisan, recette)
   if artisan then
     info:SetText(C.EnLigne(artisan) and "" or (artisan .. " est hors ligne : il recevra la commande à sa prochaine connexion."))
   else
-    info:SetText("Écris le nom de la recette. La commande sera visible par toute la guilde.")
+    info:SetText("Écris le nom de la recette. La commande sera visible par toute la guilde pendant 7 jours.")
   end
   envoyer:SetScript("OnClick", function()
     local n = math.max(1, tonumber(quantite:GetText()) or 1)

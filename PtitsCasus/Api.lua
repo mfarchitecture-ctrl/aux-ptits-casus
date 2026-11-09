@@ -13,6 +13,12 @@ function Api.EstNotrePrefixe(prefixe)
   return prefixe == PREFIXE
 end
 
+-- Version de l'addon, lue dans le .toc.
+function Api.VersionAddon()
+  local lire = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+  return lire("PtitsCasus", "Version") or "?"
+end
+
 function Api.EnvoyerGuilde(texte)
   if IsInGuild() then
     C_ChatInfo.SendAddonMessage(PREFIXE, texte, "GUILD")

@@ -87,6 +87,9 @@ local function NouvelleLigneMembre()
     if m.note and m.note ~= "" then
       GameTooltip:AddLine(m.note, 1, 0.82, 0, true)
     end
+    if #(m.metiers or {}) > 0 then
+      GameTooltip:AddLine("Avec l'addon" .. (m.version and (" (" .. m.version .. ")") or ""), 0.66, 0.62, 0.54)
+    end
     GameTooltip:Show()
   end)
   ligne:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -380,8 +383,11 @@ function Rafraichir()
     ligne.autocollant:SetShown(zero)
     ligne.autocollant:ClearAllPoints()
     ligne.autocollant:SetPoint("RIGHT", droite, 0)
-    -- Nom en couleur de classe (en gris si déconnecté), suivi du niveau en gris.
-    ligne.nom:SetText(nom .. (m.niveau and (" |cffa89f8a" .. m.niveau .. "|r") or ""))
+    -- Nom en couleur de classe (en gris si déconnecté), suivi du niveau en gris
+    -- et d'une petite coche jaune s'il a l'addon.
+    local avecAddon = #(m.metiers or {}) > 0
+    ligne.nom:SetText(nom .. (m.niveau and (" |cffa89f8a" .. m.niveau .. "|r") or "")
+      .. (avecAddon and " |TInterface\\Buttons\\UI-CheckBox-Check:14:14|t" or ""))
     if m.enLigne then
       ligne.nom:SetTextColor(ns.Api.CouleurClasse(m.classe))
     else

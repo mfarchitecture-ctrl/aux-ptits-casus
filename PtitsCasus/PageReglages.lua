@@ -226,6 +226,29 @@ forcer:SetScript("OnClick", function()
   ns.ForcerSynchro()
   print("Aux Ptits Casus : tes métiers, ton équipement et tes recettes ont été renvoyés à la guilde.")
 end)
+
+-- Version de l'addon et lien de téléchargement, à copier (Ctrl+C) : le chat ne permet pas de copier.
+local LIEN = "https://github.com/mfarchitecture-ctrl/aux-ptits-casus/releases/latest"
+local ligneVersion = Ligne(synchro, 0, "Version de l'addon", " ")
+local indicationVersion = UI.Texte(ligneVersion, UI.TEXTE, 12, "a89f8a")
+indicationVersion:SetPoint("BOTTOMLEFT", 0, 10)
+local lien = CreateFrame("EditBox", nil, synchro, "BackdropTemplate")
+lien:SetPoint("TOPLEFT", 14, synchro.y - 4)
+lien:SetPoint("TOPRIGHT", -14, synchro.y - 4)
+lien:SetHeight(28)
+lien:SetAutoFocus(false)
+lien:SetFont(UI.TEXTE, 12 * UI.ZOOM, "")
+lien:SetTextColor(Hex("c9bfa8"))
+lien:SetTextInsets(10, 10, 0, 0)
+UI.Habiller(lien, "100e0a", "6e5230")
+lien:SetText(LIEN)
+lien:SetCursorPosition(0)
+-- Toujours le même lien : on peut le sélectionner, pas le modifier.
+lien:SetScript("OnTextChanged", function(self) if self:GetText() ~= LIEN then self:SetText(LIEN) end end)
+lien:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+lien:SetScript("OnEscapePressed", lien.ClearFocus)
+lien:SetScript("OnEnterPressed", lien.ClearFocus)
+synchro.y = synchro.y - 4 - 28 - 4
 synchro:SetHeight(-synchro.y + 10)
 
 -- Commandes du chat que tous les joueurs peuvent utiliser.
@@ -306,6 +329,9 @@ function Rafraichir()
     end
   end
   indicationSynchro:SetText(avecAddon .. " joueur(s) avec l'addon")
+  local recente = ns.VersionRecente()
+  indicationVersion:SetText("Tu as la " .. ns.Api.VersionAddon() .. (recente ~= ns.Api.VersionAddon()
+    and (" · |cffffd100la " .. recente .. " existe : lien ci-dessous|r") or " · c'est la plus récente connue"))
 
   local gauche = affichage:GetHeight() + (d.officier and droits:GetHeight() + 14 or 0)
     + commandesJoueurs:GetHeight() + 14 + (avecCommandes and commandes:GetHeight() + 14 or 0)

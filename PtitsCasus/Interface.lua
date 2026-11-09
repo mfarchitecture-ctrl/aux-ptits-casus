@@ -282,6 +282,7 @@ function UI.Membres()
     membres[nom].ilvl = membres[nom].ilvl or recu.ilvl
     membres[nom].synchro = recu.dateEquipement and date("le %d/%m à %H:%M", recu.dateEquipement)
     membres[nom].addon = true
+    membres[nom].version = recu.version
   end
   return membres
 end
@@ -669,7 +670,7 @@ function UI.RafraichirMenu(membres)
     end
   end
   enLigne:SetText(nbEnLigne .. " en ligne")
-  avecAddon:SetText(nbAddon .. " avec l'addon")
+  avecAddon:SetText(nbAddon .. " en ligne avec l'addon")
   aucunLoot:SetShown(not UI.Loot())
 end
 
@@ -726,6 +727,10 @@ local function CreerBoutonMinimap()
       local n = ns.Commandes.Donnees().nonLues
       if n > 0 then
         bulle:AddLine(n .. " nouveauté(s) dans les commandes", 1, 0.82, 0)
+      end
+      local recente = ns.VersionRecente()
+      if recente ~= ns.Api.VersionAddon() then
+        bulle:AddLine("La version " .. recente .. " de l'addon existe (lien dans Réglages)", 1, 0.82, 0)
       end
     end,
   })

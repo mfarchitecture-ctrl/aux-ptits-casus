@@ -408,11 +408,47 @@ local function CapturerRecettes()
   Actualiser()
 end
 
--- Métiers et équipement, même si rien n'a changé.
+-- Métiers, équipement et version de l'addon, même si rien n'a changé.
 local function RenvoyerInfos()
   dernierEnvoi, dernierEquipement = nil, nil
   EnvoyerMetiers()
   EnvoyerEquipement()
+  Api.EnvoyerGuilde("N" .. Api.VersionAddon())
+end
+
+-- "1.0.10" est plus récente que "1.0.9" : on compare nombre par nombre.
+local function PlusRecente(a, b)
+  local na, nb = {}, {}
+  for n in a:gmatch("%d+") do table.insert(na, tonumber(n)) end
+  for n in b:gmatch("%d+") do table.insert(nb, tonumber(n)) end
+  for i = 1, math.max(#na, #nb) do
+    if (na[i] or 0) ~= (nb[i] or 0) then
+      return (na[i] or 0) > (nb[i] or 0)
+    end
+  end
+  return false
+end
+
+-- Version la plus récente connue : la mienne ou celle d'un membre.
+function ns.VersionRecente()
+  local recente = Api.VersionAddon()
+  for _, fiche in pairs(PtitsCasusDB.membres) do
+    if fiche.version and PlusRecente(fiche.version, recente) then
+      recente = fiche.version
+    end
+  end
+  return recente
+end
+
+-- Une seule fois par session : prévient dans le chat qu'une version plus récente existe.
+local versionSignalee = false
+local function SignalerVersion()
+  local recente = ns.VersionRecente()
+  if not versionSignalee and recente ~= Api.VersionAddon() then
+    versionSignalee = true
+    print("|cffffd100Aux Ptits Casus|r : la version " .. recente .. " de l'addon existe (tu as la "
+      .. Api.VersionAddon() .. "). Lien de téléchargement dans Réglages.")
+  end
 end
 
 -- Bouton « Forcer ma synchronisation » des Réglages : renvoie tout.
@@ -472,9 +508,10 @@ frame:SetScript("OnEvent", function(_, event, ...)
     Api.InitMessages()
     ns.InitInterface()
     -- Petit délai : la guilde n'est pas toujours prête à la connexion.
+    Fiche(Api.MonNom()).version = Api.VersionAddon()
     C_Timer.After(5, function()
-      EnvoyerMetiers()
-      EnvoyerEquipement()
+      RenvoyerInfos()
+      SignalerVersion() -- d'après les versions reçues lors des sessions précédentes
     end)
     C_Timer.After(15, AnnoncerRecettes)
     frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
@@ -517,6 +554,9 @@ frame:SetScript("OnEvent", function(_, event, ...)
       RecevoirDemande(texte)
     elseif sorte == "A" and guilde then
       RecevoirConnus(texte, expediteur)
+    elseif sorte == "N" and guilde then
+      Fiche(expediteur).version = texte:sub(2, 20)
+      SignalerVersion()
     elseif sorte == "X" and guilde then
       RecevoirRelais(texte, expediteur)
     elseif ((sorte == "G" or sorte == "Q") and guilde) or ((sorte == "C" or sorte == "R") and canal == "WHISPER") then

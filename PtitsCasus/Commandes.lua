@@ -110,15 +110,23 @@ local function Diffuser(c)
   end
 end
 
--- Liste à afficher, la plus récente d'abord. Les commandes faites ou annulées depuis plus de
--- 3 jours, et celles ouvertes depuis plus de 7 jours, sont retirées.
+-- Secondes avant qu'une commande de guilde soit retirée de la liste : 7 jours après sa création
+-- si elle est ouverte, 3 jours après sa fin si elle est faite ou annulée. nil si elle est prise.
+function C.Expiration(c)
+  if c.etat == "Ouverte" then
+    return c.quand + 7 * 86400 - Api.Heure()
+  elseif c.etat == "Faite" or c.etat == "Annulée" then
+    return c.maj + 3 * 86400 - Api.Heure()
+  end
+end
+
+-- Liste à afficher, la plus récente d'abord, sans les commandes expirées.
 function C.Guilde()
   local g = Guilde(C.Donnees())
-  local maintenant = Api.Heure()
   local liste = {}
   for id, c in pairs(g) do
-    local finie = c.etat == "Faite" or c.etat == "Annulée"
-    if (finie and maintenant - c.maj > 3 * 86400) or (not finie and maintenant - c.quand > 7 * 86400) then
+    local reste = C.Expiration(c)
+    if reste and reste <= 0 then
       g[id] = nil
     else
       table.insert(liste, c)

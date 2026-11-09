@@ -459,7 +459,9 @@ local function Composition(y, membres)
     end
     if #(m.metiers or {}) > 0 then
       addon = addon + 1
-      table.insert(nomsAddon, { nom, m.classe, m.synchro })
+      -- Sans version : un addon d'avant la 1.0.3, ou pas encore reconnecté depuis.
+      local version = m.version and ("v" .. m.version) or "version ?"
+      table.insert(nomsAddon, { nom, m.classe, version .. (m.synchro and ("   " .. m.synchro) or "") })
     end
     if m.classe then
       parClasse[m.classe] = (parClasse[m.classe] or 0) + 1
