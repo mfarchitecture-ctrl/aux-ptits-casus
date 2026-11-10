@@ -2,6 +2,7 @@
 ## Title: Aux Ptits Casus
 ## Version: 1.0.3
 ## Notes: Addon de la guilde Aux Ptits Casus
+## IconTexture: Interface\AddOns\PtitsCasus\Media\AddonIcon
 ## SavedVariables: PtitsCasusDB
 ## OptionalDeps: EllesmereUI
 
