@@ -299,9 +299,28 @@ end
 -- Au centre, le modèle 3D du personnage (glisser pour le tourner), quand le jeu peut l'afficher ;
 -- sinon un texte à sa place.
 local MARGE_CENTRE = 14 + ICONE + 8
-local modele = UI.Paragraphe(fiche, 12, "a89f8a", 170, "Modèle 3D du personnage quand il est à portée d'inspection")
+-- Hors de portée : grand emblème rond de sa classe, avec une petite ligne dessous.
+local embleme = fiche:CreateTexture(nil, "ARTWORK")
+embleme:SetSize(110, 110)
+embleme:SetPoint("CENTER", fiche, "TOPLEFT", LARGEUR_FICHE / 2, HAUT_ICONES - 4 * PAS + 14)
+embleme:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+embleme:SetVertexColor(0.7, 0.7, 0.7) -- un peu assombri, mais opaque : la bordure ne transparaît pas dessous
+local rond = fiche:CreateMaskTexture()
+rond:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+rond:SetAllPoints(embleme)
+embleme:AddMaskTexture(rond)
+-- Bordure : disque de la couleur de la classe, un peu plus grand, sous l'emblème.
+local bordure = fiche:CreateTexture(nil, "BORDER")
+bordure:SetSize(118, 118)
+bordure:SetPoint("CENTER", embleme)
+bordure:SetAlpha(0.8)
+local rondBordure = fiche:CreateMaskTexture()
+rondBordure:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+rondBordure:SetAllPoints(bordure)
+bordure:AddMaskTexture(rondBordure)
+local modele = UI.Paragraphe(fiche, 12, "8a826f", 300, "Personnage visible à portée ou dans le groupe")
 modele:SetJustifyH("CENTER")
-modele:SetPoint("CENTER", fiche, "TOPLEFT", LARGEUR_FICHE / 2, HAUT_ICONES - 4 * PAS)
+modele:SetPoint("TOP", embleme, "BOTTOM", 0, -78) -- à mi-chemin entre l'emblème et les armes
 local modele3D = CreateFrame("PlayerModel", nil, fiche)
 modele3D:SetPoint("TOPLEFT", MARGE_CENTRE, HAUT_ICONES)
 modele3D:SetPoint("BOTTOMRIGHT", fiche, "TOPRIGHT", -MARGE_CENTRE, HAUT_ICONES - 8 * PAS + 8)
@@ -449,6 +468,10 @@ function Rafraichir()
   local unite = nom == UI.Moi() and "player" or ns.Api.UniteVisible(nom)
   modele3D:SetShown(unite ~= nil)
   modele:SetShown(unite == nil)
+  embleme:SetShown(unite == nil)
+  embleme:SetTexture(ns.Api.IconeClasse(m.classe))
+  bordure:SetShown(unite == nil)
+  bordure:SetColorTexture(ns.Api.CouleurClasse(m.classe))
   RemplirFond(ns.Api.FondRace(unite))
   if unite then
     modele3D:SetUnit(unite)

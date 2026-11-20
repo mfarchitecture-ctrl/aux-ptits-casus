@@ -130,6 +130,19 @@ function Api.SuisMaitreButin()
   return partie == 0
 end
 
+-- Objets d'un corps ouvert (fenêtre de butin) : { { lien = ..., quantite = ..., qualite = ... }, ... }
+-- Les pièces d'or sont ignorées.
+function Api.LireButin()
+  local objets = {}
+  for slot = 1, GetNumLootItems() do
+    local _, nom, quantite, _, qualite = GetLootSlotInfo(slot)
+    if GetLootSlotType(slot) == 1 then -- 1 = objet, 2 = pièces
+      table.insert(objets, { lien = GetLootSlotLink(slot) or nom, quantite = quantite, qualite = qualite })
+    end
+  end
+  return objets
+end
+
 -- Rangs de la guilde, du plus haut au plus bas : { { nom = "Officier", membres = 4 }, ... }
 function Api.LireRangs()
   local rangs = {}

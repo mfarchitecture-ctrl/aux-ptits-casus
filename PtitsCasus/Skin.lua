@@ -7,6 +7,13 @@ local UI = ns.UI
 
 -- Repeint un élément noté par UI.Noter, selon sa sorte.
 function UI.Peindre(sorte, objet)
+  -- DaylightUI : seul le cadre des fenêtres est repeint, le contenu reste le nôtre.
+  if UI.daylight then
+    if sorte == "fenetre" then
+      UI.daylight.Window(objet)
+    end
+    return
+  end
   local S = UI.skin
   if sorte == "fenetre" then
     S.Shell(objet)
@@ -43,5 +50,17 @@ if EllesmereUI and EllesmereUI.RegisterSkin then
         UI.RafraichirTout()
       end
     end)
+  end)
+elseif DaylightUI and DaylightUI.API then
+  -- Skin DaylightUI, par l'API qu'il prévoit pour les autres addons (API.md dans son dossier).
+  DaylightUI.API.For("PtitsCasus").RegisterSkin("PtitsCasus", function(Kit)
+    UI.daylight = Kit
+    for _, note in ipairs(UI.aSkinner) do
+      UI.Peindre(note[1], note[2])
+    end
+    UI.aSkinner = {}
+    if UI.SkinnerOngletGuilde then
+      UI.SkinnerOngletGuilde()
+    end
   end)
 end

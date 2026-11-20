@@ -44,7 +44,7 @@ UI.PALIERS = {
 UI.aSkinner = {}
 
 function UI.Noter(sorte, objet)
-  if UI.skin then
+  if UI.skin or UI.daylight then
     UI.Peindre(sorte, objet)
   else
     table.insert(UI.aSkinner, { sorte, objet })
@@ -710,7 +710,7 @@ local NOM_BOUTON = "PtitsCasus"
 local function CreerBoutonMinimap()
   local objet = LibStub("LibDataBroker-1.1"):NewDataObject(NOM_BOUTON, {
     type = "launcher",
-    icon = "Interface\\Icons\\INV_Misc_Book_09",
+    icon = "Interface\\AddOns\\PtitsCasus\\Media\\AddonIcon", -- la même que dans la liste des addons
     OnClick = function(_, clic)
       if clic == "RightButton" then
         panneau:Show()
@@ -768,9 +768,26 @@ local function PlacerOngletGuilde()
       dernier = c
     end
   end
+  UI.SkinnerOngletGuilde()
   ongletGuilde:SetParent(dernier)
   ongletGuilde:ClearAllPoints()
   ongletGuilde:SetPoint("TOP", dernier, "BOTTOM", 0, f.RosterTab:GetTop() - f.ChatTab:GetBottom())
+end
+
+-- Avec DaylightUI : notre onglet prend le même habit que ceux du jeu (voir Skin.lua).
+-- Aussi appelé à chaque ouverture de la fenêtre de guilde : DaylightUI peut être prêt
+-- après la création de l'onglet. Le logo n'est pas rogné (son bouclier a des coins vides).
+local ongletSkinne
+function UI.SkinnerOngletGuilde()
+  local Kit = UI.daylight
+  if ongletSkinne or not (Kit and ongletGuilde) then
+    return
+  end
+  ongletSkinne = true
+  Kit.SideTab(ongletGuilde, nil, nil, true)
+  local function Repeindre() Kit.RepaintRow(ongletGuilde) end
+  panneau:HookScript("OnShow", Repeindre)
+  panneau:HookScript("OnHide", Repeindre)
 end
 
 local function AjouterOngletGuilde()
@@ -787,7 +804,8 @@ local function AjouterOngletGuilde()
   fond:SetPoint("TOPLEFT", -3, 11)
   local icone = ongletGuilde:CreateTexture(nil, "ARTWORK")
   icone:SetAllPoints()
-  icone:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+  icone:SetTexture("Interface\\AddOns\\PtitsCasus\\Media\\AddonIcon") -- le logo de l'addon
+  ongletGuilde.Icon = icone -- nom attendu par le skin DaylightUI
   ongletGuilde:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
   ongletGuilde:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
   ongletGuilde:GetCheckedTexture():SetBlendMode("ADD")
@@ -807,6 +825,7 @@ local function AjouterOngletGuilde()
   ongletGuilde:SetScript("OnLeave", function() GameTooltip:Hide() end)
   panneau:HookScript("OnShow", function() ongletGuilde:SetChecked(true) end)
   panneau:HookScript("OnHide", function() ongletGuilde:SetChecked(false) end)
+  UI.SkinnerOngletGuilde()
   -- Les onglets du jeu ne sont placés qu'une fois la fenêtre ouverte.
   f:HookScript("OnShow", function() C_Timer.After(0, PlacerOngletGuilde) end)
   if f:IsShown() then
@@ -852,7 +871,7 @@ SlashCmdList.PTITSCASUS = function(argument)
   elseif argument == "debug" then
     -- Affiche dans mon chat chaque message de l'addon reçu (test des échanges). Même commande : arrêter.
     ns.debug = not ns.debug
-    print("Aux Ptits Casus : affichage des messages reçus " .. (ns.debug and "activé" or "coupé") .. ".")
+    print("Aux Ptits Casus : affichage des messages reçus et du test de loot " .. (ns.debug and "activé" or "coupé") .. ".")
   elseif ns.admin and argument == "reduit" then
     ns.demo = true
     UI.membreChoisi = nil

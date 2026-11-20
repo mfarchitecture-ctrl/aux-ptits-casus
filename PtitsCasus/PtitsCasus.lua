@@ -494,8 +494,22 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("SKILL_LINES_CHANGED")
 frame:RegisterEvent("CHAT_MSG_ADDON")
+-- Test du loot (étape 1) : affiche dans le chat, avec /pc debug, ce que le jeu donne.
+frame:RegisterEvent("ENCOUNTER_END")
+frame:RegisterEvent("BOSS_KILL")
+frame:RegisterEvent("LOOT_OPENED")
 frame:SetScript("OnEvent", function(_, event, ...)
-  if event == "PLAYER_LOGIN" then
+  if event == "ENCOUNTER_END" or event == "BOSS_KILL" or event == "LOOT_OPENED" then
+    if ns.debug then
+      print("Aux Ptits Casus test : " .. event, ...)
+      if event == "LOOT_OPENED" then
+        print("Responsable du butin : " .. (Api.SuisMaitreButin() and "moi" or "pas moi"))
+        for _, o in ipairs(Api.LireButin()) do
+          print("  " .. o.quantite .. " × " .. o.lien .. " (qualité " .. tostring(o.qualite) .. ")")
+        end
+      end
+    end
+  elseif event == "PLAYER_LOGIN" then
     PtitsCasusDB = PtitsCasusDB or {}
     PtitsCasusDB.membres = PtitsCasusDB.membres or {}
     PtitsCasusDB.reglages = PtitsCasusDB.reglages or {}
