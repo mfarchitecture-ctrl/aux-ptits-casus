@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: Aux Ptits Casus
-## Version: 1.0.3
+## Version: 1.0.4
 ## Notes: Addon de la guilde Aux Ptits Casus
 ## IconTexture: Interface\AddOns\PtitsCasus\Media\AddonIcon
 ## SavedVariables: PtitsCasusDB

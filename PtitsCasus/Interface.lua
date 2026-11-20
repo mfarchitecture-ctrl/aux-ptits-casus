@@ -449,7 +449,7 @@ table.insert(UISpecialFrames, "PtitsCasusPanneau")
 -- Cadre standard du jeu : bordure, barre de titre, portrait et croix de fermeture.
 ButtonFrameTemplate_HideButtonBar(panneau)
 panneau.Inset:Hide()
-panneau:SetTitle("Aux Ptits Casus")
+panneau:SetTitle("") -- le nom de la guilde est dans le bandeau, en grand
 if panneau.SetPortraitToAsset then
   panneau:SetPortraitToAsset("Interface\\Icons\\INV_Misc_Book_09")
 else
@@ -476,9 +476,14 @@ ligneBandeau:SetPoint("BOTTOMRIGHT")
 ligneBandeau:SetHeight(2)
 ligneBandeau:SetColorTexture(Hex("8c6a3c"))
 
-local sousTitre = UI.Texte(bandeau, UI.TEXTE, 13, "a89f8a")
-sousTitre:SetPoint("LEFT", 58, 0) -- après le portrait
-sousTitre:SetText("Gestion de guilde · WoW Forever")
+-- Nom de la guilde en grand, centré en hauteur dans toute la bande sombre (barre de titre comprise),
+-- puis le numéro de version en petit sur la même ligne.
+local nomGuilde = UI.Texte(bandeau, UI.TITRE, 24, "e8e0cc")
+nomGuilde:SetPoint("LEFT", 58, 12) -- après le portrait ; +12 : la moitié de la barre de titre au-dessus
+nomGuilde:SetText("Aux Ptits Casus")
+local sousTitre = UI.Texte(bandeau, UI.TEXTE, 11, "8a826f")
+sousTitre:SetPoint("BOTTOMLEFT", nomGuilde, "BOTTOMRIGHT", 10, 3)
+sousTitre:SetText("v" .. ns.Api.VersionAddon())
 local puceDemo = UI.Puce(bandeau, "DÉMO", "3a2a14", "f0c674")
 puceDemo:SetPoint("LEFT", sousTitre, "RIGHT", 12, 0)
 

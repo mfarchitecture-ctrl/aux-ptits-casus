@@ -263,6 +263,35 @@ function Api.BulleRecette(cadre, id)
   GameTooltip:Show()
 end
 
+-- Clic droit sur une recette : « Lien dans le chat » et « Épingler la recette » (suivi d'objectifs).
+-- Épingler n'apparaît que si le jeu le permet (fonction du client moderne, à confirmer sur Forever).
+function Api.MenuRecette(cadre, id)
+  local function Lien()
+    local ok, objet = pcall(C_TradeSkillUI.GetRecipeOutputItemData, id)
+    local lien = ok and objet and objet.hyperlink or C_Spell.GetSpellLink(id)
+    local inserer = ChatEdit_InsertLink or (ChatFrameUtil and ChatFrameUtil.InsertLink)
+    if lien and not inserer(lien) then
+      ChatFrame_OpenChat(lien) -- pas de ligne de chat ouverte : on en ouvre une avec le lien
+    end
+  end
+  if not MenuUtil then
+    Lien()
+    return
+  end
+  local ui = C_TradeSkillUI
+  MenuUtil.CreateContextMenu(cadre, function(_, menu)
+    menu:CreateButton("Lien dans le chat", Lien)
+    if ui.SetRecipeTracked and ui.IsRecipeTracked then
+      local suivie = ui.IsRecipeTracked(id, false)
+      menu:CreateButton(suivie and "Retirer l'épingle" or "Épingler la recette", function()
+        if not pcall(ui.SetRecipeTracked, id, not suivie, false) then
+          print("Aux Ptits Casus : le jeu ne permet pas d'épingler cette recette.")
+        end
+      end)
+    end
+  end)
+end
+
 local EMPLACEMENTS = {
   tete = 1, cou = 2, epaules = 3, chemise = 4, torse = 5, taille = 6, jambes = 7, pieds = 8, poignets = 9, mains = 10,
   doigt1 = 11, doigt2 = 12, bijou1 = 13, bijou2 = 14, dos = 15, arme = 16, mainGauche = 17, relique = 18, tabard = 19,

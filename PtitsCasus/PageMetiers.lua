@@ -124,7 +124,7 @@ retour:SetHeight(28)
 retour:SetPoint("LEFT", voirFiche, "RIGHT", 8, 0)
 local aideRecettes = UI.Texte(artisanat, UI.TEXTE, 12, "a89f8a")
 aideRecettes:SetPoint("BOTTOMLEFT", 20, 12)
-aideRecettes:SetText("Clic sur une recette : la commander.")
+aideRecettes:SetText("Clic : commander. Clic droit : lien dans le chat, épingler.")
 -- Date de la dernière synchro des recettes, en bas à droite (comme sur la fiche personnage).
 local synchroRecettes = UI.Texte(artisanat, UI.TEXTE, 12, "a89f8a")
 synchroRecettes:SetPoint("BOTTOMRIGHT", -14, 12)
@@ -253,6 +253,7 @@ local function AfficherArtisanat(a)
     if not lignesRecettes[i] then
       local ligne = CreateFrame("Button", nil, listeRecettes)
       ligne:SetSize(largeur, 24)
+      ligne:RegisterForClicks("LeftButtonUp", "RightButtonUp")
       UI.Survol(ligne)
       ligne.texte = UI.TexteCourt(ligne, 14, "e8e0cc", largeur - 8)
       ligne.texte:SetPoint("LEFT", 4, 0)
@@ -270,8 +271,15 @@ local function AfficherArtisanat(a)
     ligne:SetPoint("TOPLEFT", colonne * (largeur + 12), -rang * 26)
     ligne.recette = recette
     ligne.texte:SetText("|cffffd100•|r " .. recette)
-    ligne:SetScript("OnClick", function() UI.OuvrirCommande(a.nom, recette) end)
-    ligne:SetEnabled(a.nom ~= UI.Moi()) -- pas de commande à soi-même
+    ligne:SetScript("OnClick", function(self, bouton)
+      if bouton == "RightButton" then
+        if idsRecettes[recette] then
+          ns.Api.MenuRecette(self, idsRecettes[recette])
+        end
+      elseif a.nom ~= UI.Moi() then -- pas de commande à soi-même
+        UI.OuvrirCommande(a.nom, recette)
+      end
+    end)
     ligne:Show()
   end
   videRecettes:SetText(SANS_RECETTES[metierChoisi] and "Métier de récolte : pas de recettes."
